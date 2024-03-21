@@ -51,7 +51,7 @@ class Category(models.Model):
         return self.name
 
 
-class SubscriptionTerms(models.Model):
+class Terms(models.Model):
     """Модель для описания условия подписки"""
     name = models.CharField(
         max_length=150,
@@ -123,8 +123,9 @@ class Service(models.Model):
     text = models.TextField(
         verbose_name='Описание сервиса'
     )
-    subscription_terms = models.ForeignKey(
-        SubscriptionTerms,
+    subscription_terms = models.ManyToManyField(
+        Terms,
+        through='TermsInService',
         related_name='services',
         on_delete=models.CASCADE,
         verbose_name='Условия подписки',
@@ -151,19 +152,40 @@ class Service(models.Model):
         return self.name
 
 
+class TermsInService(models.Model):
+    terms = models.ForeignKey(
+        Terms,
+        on_delete=models.CASCADE,
+        related_name='ingredient_list',
+        verbose_name='Рецепт',
+    )
+    service = models.ForeignKey(
+        Service,
+        on_delete=models.CASCADE,
+        verbose_name='Ингредиент',
+        related_name='in_recipe'
+    )
+
+
 class Subscription(models.Model):
     """Модель подписки."""
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='follower',
+        related_name='subscription',
         verbose_name='Подписчик',
     )
     servece = models.ForeignKey(
         Service,
         on_delete=models.CASCADE,
-        related_name='subscribers',
-        verbose_name='Автор',
+        related_name='subscription',
+        verbose_name='Сервис',
+    )
+    terms = models.ForeignKey(
+        Terms,
+        on_delete=models.CASCADE,
+        related_name='subscription',
+        verbose_name='Условия',
     )
 
     class Meta:

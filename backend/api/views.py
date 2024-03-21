@@ -1,7 +1,13 @@
 from djoser.views import UserViewSet
-from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from rest_framework import viewsets
+from rest_framework.permissions import IsAuthenticatedOrReadOnly, AllowAny
 
-from api.serializers import CustomUserSerializer
+from api.serializers import (
+    CustomUserSerializer,
+    CategorySerializer,
+    SubscriptionTermsSerializer
+)
+from services.models import Category, SubscriptionTerms
 from users.models import User
 
 
@@ -90,3 +96,18 @@ class CustomUserViewSet(UserViewSet):
     #     serializer.save()
     #     return Response(serializer.data, status=status.HTTP_200_OK)
 
+
+class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
+    """Вьюсет работы с обьектами класса Category"""
+
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+    permission_classes = (AllowAny,)
+
+
+class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
+    """Вьюсет работы с обьектами класса SubscriptionTerms"""
+
+    queryset = SubscriptionTerms.objects.all()
+    serializer_class = SubscriptionTermsSerializer
+    permission_classes = (AllowAny,)
