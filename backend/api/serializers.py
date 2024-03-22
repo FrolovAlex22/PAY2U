@@ -8,6 +8,20 @@ from rest_framework.serializers import ModelSerializer
 from users.models import User
 from services.models import Category, Terms
 
+class UserGETSerializer(UserSerializer):
+    """При просмотре страницы пользователя"""
+
+    class Meta:
+        model = User
+        fields = (
+            'id',
+            'email',
+            'first_name',
+            'last_name',
+            'phone_number'
+        )
+
+
 class Base64ImageField(serializers.ImageField):
     """Кастомное поле для кодирования изображения в base64."""
 
@@ -21,18 +35,6 @@ class Base64ImageField(serializers.ImageField):
 
         return super().to_internal_value(data)
 
-class CustomUserSerializer(UserSerializer):
-    """При просмотре страницы пользователя"""
-
-    class Meta:
-        model = User
-        fields = (
-            'id',
-            'email',
-            'username',
-            'phone_number'
-        )
-
 
 class CustomUserCreateSerializer(UserCreateSerializer):
     """При создании пользователя"""
@@ -43,6 +45,9 @@ class CustomUserCreateSerializer(UserCreateSerializer):
             'email',
             'id',
             'username',
+            'name',
+            'first_name',
+            'last_name',
             'phone_number',
             'password',
         )

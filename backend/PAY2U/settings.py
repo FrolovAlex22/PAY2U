@@ -1,3 +1,4 @@
+from datetime import timedelta
 import os
 from pathlib import Path
 
@@ -116,9 +117,9 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
     ),
 
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework.authentication.TokenAuthentication',
-    ),
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ],
 
     'TEST_REQUEST_DEFAULT_FORMAT': 'json',
 }
@@ -134,13 +135,20 @@ CSV_FILES_DIR = '../data'
 DJOSER = {
     'LOGIN_FIELD': 'email',
     'HIDE_USERS': False,
-    'SERIALIZERS': {
-        'user_create': 'api.serializers.CustomUserCreateSerializer',
-        'user': 'api.serializers.CustomUserSerializer',
-        'current_user': 'api.serializers.CustomUserSerializer',
-    },
-    'PERMISSIONS': {
-        'user': ['djoser.permissions.CurrentUserOrAdminOrReadOnly'],
-        'user_list': ['rest_framework.permissions.AllowAny'],
-    }
+    # 'SERIALIZERS': {
+    #     'user_create': 'api.serializers.CustomUserCreateSerializer',
+    #     'user': 'api.serializers.UserGETSerializer',
+    #     'current_user': 'api.serializers.UserGETSerializer',
+    # },
+    # 'PERMISSIONS': {
+    #     'user': ['djoser.permissions.CurrentUserOrAdminOrReadOnly'],
+    #     'user_list': ['rest_framework.permissions.AllowAny'],
+    # }
+}
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+    'ROTATE_REFRESH_TOKENS': False,
+    'BLACKLIST_AFTER_ROTATION': True,
 }
