@@ -4,7 +4,8 @@ from rest_framework import routers
 from .views import CustomUserViewSet, CategoryViewSet
 
 router = routers.DefaultRouter()
-router.register('users', CustomUserViewSet, basename='users')
+router.register('catalog', CustomUserViewSet, basename='services')
+router.register('profile', CustomUserViewSet, basename='users')
 router.register('categories', CategoryViewSet, basename='categories')
 router.register('terms', CustomUserViewSet, basename='terms')
 app_name = 'api'

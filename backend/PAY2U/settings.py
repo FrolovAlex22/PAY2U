@@ -5,6 +5,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+SERVICES_LIMIT = 6
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 

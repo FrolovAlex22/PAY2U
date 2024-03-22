@@ -117,7 +117,7 @@ class Service(models.Model):
         ],
         verbose_name='Название сервиса'
     )
-    category = models.ForeignKey(
+    category = models.ManyToManyField(
         Category,
         related_name='services',
         on_delete=models.CASCADE,
@@ -131,7 +131,7 @@ class Service(models.Model):
     text = models.TextField(
         verbose_name='Описание сервиса'
     )
-    subscription_terms = models.ManyToManyField(
+    service_terms = models.ManyToManyField(
         Terms,
         through='TermsInService',
         related_name='services',
@@ -163,14 +163,29 @@ class TermsInService(models.Model):
     terms = models.ForeignKey(
         Terms,
         on_delete=models.CASCADE,
-        related_name='ingredient_list',
+        related_name='terms_list',
         verbose_name='Рецепт',
     )
     service = models.ForeignKey(
         Service,
         on_delete=models.CASCADE,
         verbose_name='Ингредиент',
-        related_name='in_recipe'
+        related_name='services_list'
+    )
+
+
+class CategoryInService(models.Model):
+    category = models.ForeignKey(
+        Terms,
+        on_delete=models.CASCADE,
+        related_name='category_services',
+        verbose_name='Рецепт',
+    )
+    service = models.ForeignKey(
+        Service,
+        on_delete=models.CASCADE,
+        verbose_name='Ингредиент',
+        related_name='service_categories'
     )
 
 
