@@ -5,9 +5,9 @@ from rest_framework.permissions import IsAuthenticatedOrReadOnly, AllowAny
 from api.serializers import (
     CustomUserSerializer,
     CategorySerializer,
-    SubscriptionTermsSerializer
+    TermsSerializer
 )
-from services.models import Category, SubscriptionTerms
+from services.models import Category, Terms
 from users.models import User
 
 
@@ -105,9 +105,9 @@ class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = (AllowAny,)
 
 
-class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
+class TermsViewSet(viewsets.ReadOnlyModelViewSet):
     """Вьюсет работы с обьектами класса SubscriptionTerms"""
 
-    queryset = SubscriptionTerms.objects.all()
-    serializer_class = SubscriptionTermsSerializer
+    queryset = Terms.objects.all()
+    serializer_class = TermsSerializer
     permission_classes = (AllowAny,)

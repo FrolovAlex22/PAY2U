@@ -6,7 +6,7 @@ from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer
 
 from users.models import User
-from services.models import Category, SubscriptionTerms
+from services.models import Category, Terms
 
 class Base64ImageField(serializers.ImageField):
     """Кастомное поле для кодирования изображения в base64."""
@@ -58,11 +58,11 @@ class CategorySerializer(ModelSerializer):
         fields = ('id', 'name', 'text')
 
 
-class SubscriptionTermsSerializer(ModelSerializer):
+class  TermsSerializer(ModelSerializer):
     """Сериализатор для вывода категории"""
 
     class Meta:
         """Мета-параметры сериализатора"""
 
-        model = SubscriptionTerms
+        model = Terms
         fields = ('id', 'name', 'duration', 'price', 'cashback')

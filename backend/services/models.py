@@ -67,7 +67,6 @@ class Terms(models.Model):
     )
     duration = models.CharField(
         max_length=150,
-        unique=True,
         validators=[
             RegexValidator(
                 regex=r'^[\w.@+-]+$',
@@ -78,9 +77,18 @@ class Terms(models.Model):
         ],
     )
     price = models.PositiveIntegerField(
-        verbose_name='цена'
+        verbose_name='Цена'
     )
-    cashback = models.PositiveIntegerField(
+    cashback = models.CharField(
+        max_length=150,
+        validators=[
+            RegexValidator(
+                regex=r'^[\w.@+-]+$',
+                message='Название условия подписки не соответствует, '
+                        'можно использовать только буквы, '
+                        'цифры и нижнее подчеркивания.'
+            )
+        ],
         verbose_name='Кэшбэк'
     )
 
@@ -127,7 +135,6 @@ class Service(models.Model):
         Terms,
         through='TermsInService',
         related_name='services',
-        on_delete=models.CASCADE,
         verbose_name='Условия подписки',
     )
 

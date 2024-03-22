@@ -129,7 +129,7 @@ MEDIA_ROOT = '/app/media/'
 STATIC_URL = '/static/django/'
 STATIC_ROOT = '/app/static_django/'
 
-CSV_FILES_DIR = 'data'
+CSV_FILES_DIR = '../data'
 
 DJOSER = {
     'LOGIN_FIELD': 'email',
