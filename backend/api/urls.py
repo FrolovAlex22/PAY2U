@@ -6,6 +6,7 @@ from .views import TermsViewSet, CategoryViewSet, MeView
 router = routers.DefaultRouter()
 router.register('categories', CategoryViewSet, basename='categories')
 router.register('terms', TermsViewSet, basename='terms')
+
 app_name = 'api'
 
 urlpatterns = [

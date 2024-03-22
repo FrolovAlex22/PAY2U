@@ -1,3 +1,4 @@
+from django.utils import timezone
 from django.contrib.auth import get_user_model
 from django.core.validators import RegexValidator
 from django.db import models
@@ -20,23 +21,6 @@ class Category(models.Model):
         ],
         verbose_name='Название категории'
     )
-    text = models.CharField(
-        max_length=150,
-        validators=[
-            RegexValidator(
-                regex=r'^[\w.@+-]+$',
-                message='Описание категории не соответствует, '
-                        'можно использовать только буквы, '
-                        'цифры и нижнее подчеркивания.'
-            )
-        ],
-        verbose_name='Описание категории'
-    )
-
-    REQUIRED_FIELDS = [
-        'name',
-        'text',
-    ]
 
     class Meta:
         """Мета-параметры модели"""
@@ -49,56 +33,6 @@ class Category(models.Model):
         """Метод строкового представления модели."""
 
         return self.name
-
-
-class Terms(models.Model):
-    """Модель для описания условия подписки"""
-    name = models.CharField(
-        max_length=150,
-        unique=True,
-        validators=[
-            RegexValidator(
-                regex=r'^[\w.@+-]+$',
-                message='Название условия подписки не соответствует, '
-                        'можно использовать только буквы, '
-                        'цифры и нижнее подчеркивания.'
-            )
-        ],
-    )
-    duration = models.CharField(
-        max_length=150,
-        validators=[
-            RegexValidator(
-                regex=r'^[\w.@+-]+$',
-                message='Название условия подписки не соответствует, '
-                        'можно использовать только буквы, '
-                        'цифры и нижнее подчеркивания.'
-            )
-        ],
-    )
-    price = models.PositiveIntegerField(
-        verbose_name='Цена'
-    )
-    cashback = models.CharField(
-        max_length=150,
-        validators=[
-            RegexValidator(
-                regex=r'^[\w.@+-]+$',
-                message='Название условия подписки не соответствует, '
-                        'можно использовать только буквы, '
-                        'цифры и нижнее подчеркивания.'
-            )
-        ],
-        verbose_name='Кэшбэк'
-    )
-
-    class Meta:
-        ordering = ('id',)
-        verbose_name = 'Условия подписки'
-        verbose_name_plural = 'Условия подписок'
-
-    def __str__(self):
-        return f'{self.name}'
 
 
 class Service(models.Model):
@@ -124,27 +58,12 @@ class Service(models.Model):
         verbose_name='Категория сервиса',
     )
     image = models.ImageField(
-        upload_to='services/',
-        blank=True,
+        upload_to='services/images/',
         verbose_name='Логотип сервиса',
     )
     text = models.TextField(
         verbose_name='Описание сервиса'
     )
-    subscription_terms = models.ManyToManyField(
-        Terms,
-        through='TermsInService',
-        related_name='services',
-        verbose_name='Условия подписки',
-    )
-
-    REQUIRED_FIELDS = [
-        'name',
-        'category',
-        'image',
-        'text',
-        'subscription_terms'
-    ]
 
     class Meta:
         """Мета-параметры модели"""
@@ -159,19 +78,68 @@ class Service(models.Model):
         return self.name
 
 
-class TermsInService(models.Model):
-    terms = models.ForeignKey(
-        Terms,
-        on_delete=models.CASCADE,
-        related_name='ingredient_list',
-        verbose_name='Рецепт',
+class Terms(models.Model):
+    """Модель для описания условия подписки"""
+    name = models.CharField(
+        max_length=150,
+        validators=[
+            RegexValidator(
+                regex=r'^[\w.@+-]+$',
+                message='Название условия подписки не соответствует, '
+                        'можно использовать только буквы, '
+                        'цифры и нижнее подчеркивания.'
+            )
+        ],
+    )
+    duration = models.CharField(
+        max_length=150,
+        validators=[
+            RegexValidator(
+                regex=r'^[\w.@+-]+$',
+                message='Название условия подписки не соответствует, '
+                        'можно использовать только буквы, '
+                        'цифры и нижнее подчеркивания.'
+            )
+        ],
+    )
+    price = models.PositiveIntegerField(
+        verbose_name='Цена'
+    )
+    cashback = models.PositiveIntegerField(
+        verbose_name='Кэшбэк'
     )
     service = models.ForeignKey(
         Service,
+        related_name='subscription_terms',
         on_delete=models.CASCADE,
-        verbose_name='Ингредиент',
-        related_name='in_recipe'
+        verbose_name='Связанный сервис',
     )
+
+    class Meta:
+        ordering = ('id',)
+        verbose_name = 'Условия подписки'
+        verbose_name_plural = 'Условия подписок'
+
+    def __str__(self):
+        return f'{self.name}'
+
+
+class BankCard(models.Model):
+    """Модель банковской карты для демонстрационных целей."""
+    card_number = models.CharField(max_length=19, verbose_name='Номер карты')  # 16 цифр + 3 пробела для форматирования
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='bank_cards',
+        verbose_name='Владелец карты',
+    )
+
+    class Meta:
+        verbose_name = 'Банковская карта'
+        verbose_name_plural = 'Банковские карты'
+
+    def __str__(self):
+        return f'Карта {self.card_number[-4:]} пользователя {self.user.username}'
 
 
 class Subscription(models.Model):
@@ -179,26 +147,43 @@ class Subscription(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='subscription',
+        related_name='subscriptions',
         verbose_name='Подписчик',
     )
-    servece = models.ForeignKey(
+    service = models.ForeignKey(
         Service,
         on_delete=models.CASCADE,
-        related_name='subscription',
+        related_name='subscriptions',
         verbose_name='Сервис',
     )
     terms = models.ForeignKey(
         Terms,
         on_delete=models.CASCADE,
-        related_name='subscription',
-        verbose_name='Условия',
+        related_name='subscriptions',
+        verbose_name='Тариф',
+    )
+    start_date = models.DateTimeField(
+        default=timezone.now,
+        verbose_name='Дата начала подписки'
+    )
+    end_date = models.DateTimeField(
+        verbose_name='Дата окончания подписки'
+    )
+    bank_card = models.ForeignKey(
+        BankCard,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='subscriptions',
+        verbose_name='Банковская карта',
     )
 
+
     class Meta:
+        unique_together = ('user', 'service', 'terms')
         ordering = ('id',)
         verbose_name = 'Подписка'
         verbose_name_plural = 'Подписки'
 
     def __str__(self):
-        return f'{self.user} подписан на {self.servece}'
+        return f'{self.user} подписан на {self.service}'
