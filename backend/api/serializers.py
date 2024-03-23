@@ -1,12 +1,13 @@
-import base64
-from django.core.files.base import ContentFile
-from djoser.serializers import UserCreateSerializer
+from django.utils import timezone
+from django.db import transaction
+from datetime import timedelta
 from djoser.serializers import UserSerializer
 from rest_framework import serializers
-from rest_framework.serializers import ModelSerializer
+from django.db.models import Min, Max
 
 from users.models import User
-from services.models import Category, Terms
+from services.models import BankCard, Category, Service, Subscription, Terms
+
 
 class UserGETSerializer(UserSerializer):
     """При просмотре страницы пользователя"""
@@ -22,52 +23,95 @@ class UserGETSerializer(UserSerializer):
         )
 
 
-class Base64ImageField(serializers.ImageField):
-    """Кастомное поле для кодирования изображения в base64."""
+class ServiceSerializer(serializers.ModelSerializer):
+    min_price = serializers.SerializerMethodField()
+    max_cashback = serializers.SerializerMethodField()
 
-    def to_internal_value(self, data):
-        """Метод преобразования картинки"""
+    def get_min_price(self, obj):
+        return obj.subscription_terms.aggregate(min_price=Min('price'))['min_price']
 
-        if isinstance(data, str) and data.startswith('data:image'):
-            format, imgstr = data.split(';base64,')
-            ext = format.split('/')[-1]
-            data = ContentFile(base64.b64decode(imgstr), name='photo.' + ext)
-
-        return super().to_internal_value(data)
-
-
-class CustomUserCreateSerializer(UserCreateSerializer):
-    """При создании пользователя"""
+    def get_max_cashback(self, obj):
+        return obj.subscription_terms.aggregate(max_cashback=Max('cashback'))['max_cashback']
 
     class Meta:
-        model = User
-        fields = (
-            'email',
-            'id',
-            'username',
-            'name',
-            'first_name',
-            'last_name',
-            'phone_number',
-            'password',
-        )
+        model = Service
+        fields = ('name', 'image', 'text', 'category', 'min_price', 'max_cashback')
 
 
-class CategorySerializer(ModelSerializer):
-    """Сериализатор для вывода категории"""
+class CategorySerializer(serializers.ModelSerializer):
+    services = ServiceSerializer(many=True, read_only=True)
 
     class Meta:
-        """Мета-параметры сериализатора"""
-
         model = Category
-        fields = ('id', 'name', 'text')
+        fields = ('id', 'name', 'services')
 
 
-class  TermsSerializer(ModelSerializer):
-    """Сериализатор для вывода категории"""
+class TermsSerializer(serializers.ModelSerializer):
 
     class Meta:
-        """Мета-параметры сериализатора"""
-
         model = Terms
-        fields = ('id', 'name', 'duration', 'price', 'cashback')
+        fields = ('id', 'name', 'price', 'duration', 'cashback')
+
+
+class ServiceWithTermsSerializer(serializers.ModelSerializer):
+    subscription_terms = TermsSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Service
+        fields = ('id', 'name', 'image', 'text', 'subscription_terms')
+
+
+class TermDetailSerializer(serializers.ModelSerializer):
+    service_name = serializers.SerializerMethodField()
+
+    def get_service_name(self, obj):
+        return obj.service.name
+
+    class Meta:
+        model = Terms
+        fields = ('id', 'name', 'duration', 'cashback', 'price', 'service_name')
+
+
+class BankCardSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BankCard
+        fields = ['id', 'card_number']
+
+
+class SubscriptionSerializer(serializers.ModelSerializer):
+    bank_card_details = BankCardSerializer(source='bank_card', read_only=True)
+    service_details = ServiceSerializer(source='service', read_only=True)
+    terms_details = TermsSerializer(source='terms', read_only=True)
+
+    class Meta:
+        model = Subscription
+        fields = ['service', 'terms', 'start_date', 'end_date', 'bank_card_details', 'service_details', 'terms_details']
+        extra_kwargs = {'end_date': {'required': False}}
+
+    def create(self, validated_data):
+        user = validated_data.get('user')
+        terms = validated_data.get('terms')
+
+        bank_card = BankCard.objects.filter(user=user).first()
+        if not bank_card:
+            raise serializers.ValidationError("User does not have a bank card to associate with the subscription.")
+
+        if bank_card.balance < terms.price:
+            raise serializers.ValidationError("Not enough funds on the bank card to subscribe.")
+
+        with transaction.atomic():
+            bank_card.balance -= terms.price
+            bank_card.save()
+
+            duration_mapping = {
+                "one_month": 30,
+                "three_months": 90,
+                "six_months": 180,
+                "one_year": 365,
+            }
+            duration_days = duration_mapping.get(terms.duration, 30)
+            validated_data['end_date'] = validated_data.get('start_date', timezone.now()) + timedelta(days=duration_days)
+
+            subscription = Subscription.objects.create(**validated_data, bank_card=bank_card)
+
+        return subscription
