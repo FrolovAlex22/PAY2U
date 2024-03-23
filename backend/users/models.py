@@ -38,10 +38,6 @@ class User(AbstractUser):
         max_length=17,
         verbose_name='Телефонный номер',
     )
-    balance = models.PositiveIntegerField(
-        default=10000,
-        verbose_name='Баланс'
-    )
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ["username", 'phone_number', "first_name", "last_name"]
