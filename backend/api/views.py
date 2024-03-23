@@ -1,37 +1,48 @@
 from rest_framework import viewsets, status
-from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
-from api.serializers import (
+from .serializers import (
+    ServiceWithTermsSerializer,
     UserGETSerializer,
     CategorySerializer,
-    TermsSerializer,
+    TermDetailSerializer,
+    SubscriptionSerializer
 )
-from services.models import Category, Terms
+from services.models import Category, Service, Subscription, Terms
 from rest_framework.response import Response
+from rest_framework.generics import RetrieveAPIView
+from django.shortcuts import get_object_or_404
 
 
 class MeView(APIView):
-    """Представление для получения данных о текущем пользователе."""
-
-    permission_classes = (IsAuthenticated,)
 
     def get(self, request, *args, **kwargs):
-        """Получение данных о текущем пользователе."""
         serializer = UserGETSerializer(request.user)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
-    """Вьюсет работы с обьектами класса Category"""
-
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    permission_classes = (AllowAny,)
 
 
-class TermsViewSet(viewsets.ReadOnlyModelViewSet):
-    """Вьюсет работы с обьектами класса SubscriptionTerms"""
+class ServiceDetailView(RetrieveAPIView):
+    queryset = Service.objects.all()
+    serializer_class = ServiceWithTermsSerializer
 
-    queryset = Terms.objects.all()
-    serializer_class = TermsSerializer
-    permission_classes = (AllowAny,)
+class TermDetailAPIView(APIView):
+
+    def get(self, request, service_pk, term_pk):
+        term = get_object_or_404(Terms, pk=term_pk, service__pk=service_pk)
+        serializer = TermDetailSerializer(term)
+        return Response(serializer.data)
+
+
+class SubscriptionViewSet(viewsets.ModelViewSet):
+    queryset = Subscription.objects.all()
+    serializer_class = SubscriptionSerializer
+
+    def get_queryset(self):
+        return self.queryset.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
