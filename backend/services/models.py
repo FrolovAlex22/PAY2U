@@ -80,27 +80,22 @@ class Service(models.Model):
 
 class Terms(models.Model):
     """Модель для описания условия подписки"""
+
+    DURATION_CHOICES = [
+        ("one_month", "Один месяц"),
+        ("three_months", "Три месяца"),
+        ("six_months", "Шесть месяцев"),
+        ("one_year", "Один год"),
+    ]
+
+
     name = models.CharField(
         max_length=150,
-        validators=[
-            RegexValidator(
-                regex=r'^[\w.@+-]+$',
-                message='Название условия подписки не соответствует, '
-                        'можно использовать только буквы, '
-                        'цифры и нижнее подчеркивания.'
-            )
-        ],
     )
     duration = models.CharField(
         max_length=150,
-        validators=[
-            RegexValidator(
-                regex=r'^[\w.@+-]+$',
-                message='Название условия подписки не соответствует, '
-                        'можно использовать только буквы, '
-                        'цифры и нижнее подчеркивания.'
-            )
-        ],
+        choices=DURATION_CHOICES,
+        verbose_name='Продолжительность',
     )
     price = models.PositiveIntegerField(
         verbose_name='Цена'
@@ -177,7 +172,6 @@ class Subscription(models.Model):
         related_name='subscriptions',
         verbose_name='Банковская карта',
     )
-
 
     class Meta:
         unique_together = ('user', 'service', 'terms')
