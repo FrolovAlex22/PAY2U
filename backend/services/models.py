@@ -128,6 +128,10 @@ class BankCard(models.Model):
         related_name='bank_cards',
         verbose_name='Владелец карты',
     )
+    balance = models.PositiveIntegerField(
+        default=5000,
+        verbose_name='Баланс'
+    )
 
     class Meta:
         verbose_name = 'Банковская карта'
