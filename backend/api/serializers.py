@@ -38,7 +38,7 @@ class ServiceSerializer(serializers.ModelSerializer):
         fields = ('name', 'image', 'text', 'category', 'min_price', 'max_cashback')
 
 
-class CategorySerializer(serializers.ModelSerializer):
+class CategorySerializer(serializers.ModelSerializer): # фильтрацию сделать для раздела сравнения
     services = ServiceSerializer(many=True, read_only=True)
 
     class Meta:
@@ -77,7 +77,7 @@ class TermDetailSerializer(serializers.ModelSerializer):
 
 
 
-class SubscriptionSerializer(serializers.ModelSerializer):
+class SubscriptionSerializer(serializers.ModelSerializer): # при обновление подписки даты просуммировать
     bank_card_details = BankCardSerializer(source='bank_card', read_only=True)
     terms_details = TermDetailSerializer(source='terms', read_only=True)
 
