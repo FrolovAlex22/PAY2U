@@ -28,7 +28,7 @@ class User(AbstractUser):
     )
     first_name = models.CharField("Имя", max_length=255)
     last_name = models.CharField("Фамилия", max_length=255)
-    phone_number = models.CharField(
+    phone_number = models.CharField( # обратить внимание на это поле
         validators=[
             RegexValidator(
                 regex=r'^\+?1?\d{9,15}$',

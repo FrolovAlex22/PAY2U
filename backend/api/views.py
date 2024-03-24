@@ -16,7 +16,7 @@ from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 
 
-class MeView(APIView):
+class MeView(APIView): # представление взять у Саши, к нему добавить action методы для расчета кэшбека, оплаты и расходов
 
     def get(self, request, *args, **kwargs):
         serializer = UserSerializer(request.user)

@@ -6,7 +6,7 @@ from django.db import models
 User = get_user_model()
 
 
-class Category(models.Model):
+class Category(models.Model): # лучшие предложения как категория, реализовать поиск
     """Модель для описания категории"""
     name = models.CharField(
         max_length=150,
