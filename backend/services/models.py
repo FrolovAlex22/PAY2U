@@ -88,9 +88,20 @@ class Terms(models.Model):
         ("one_year", "Один год"),
     ]
 
+    SUB_TYPE = [
+        ('free', 'Бесплатная подписка'),
+        ('paid', 'Платная подписка'),
+        ('trial', 'Пробная подписка'),
+    ]
 
     name = models.CharField(
         max_length=150,
+    )
+    subscription_type = models.CharField(
+        max_length=100,
+        choices=SUB_TYPE,
+        default='free',
+        verbose_name='Тип подписки',
     )
     duration = models.CharField(
         max_length=150,
