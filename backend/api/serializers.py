@@ -8,7 +8,7 @@ from rest_framework.serializers import ModelSerializer
 
 from users.models import User
 from services.models import (
-    Category, Terms, Service, TermsInService, CategoryInService
+    Category, Terms, Service, TermsInService, Subscription
 )
 from PAY2U.settings import SERVICES_LIMIT
 
@@ -73,7 +73,7 @@ class TermsSerializer(ModelSerializer):
         fields = ('id', 'name', 'duration', 'price', 'cashback')
 
 
-class TermsInServiseSerializer(serializers.ModelSerializer):
+class TermsInServiseSerializer(ModelSerializer):
     """Сериализатор для модели условий в рецепте"""
 
     id = serializers.ReadOnlyField(source='terms.id')
@@ -105,7 +105,7 @@ class ServiceSerializer(ModelSerializer):
         )
 
 
-class CreateTermsInServiseSerializer(serializers.ModelSerializer):
+class CreateTermsInServiseSerializer(ModelSerializer):
     """Сериализатор для модели условий в рецепте"""
 
     id = serializers.IntegerField()
@@ -195,8 +195,6 @@ class CreateServiceSerializer(ModelSerializer):
         """Метод обновления модели"""
 
         TermsInService.objects.filter(service=instance).delete()
-        CategoryInService.objects.filter(service=instance).delete()
-
         self.validate_category(validated_data)
         self.validate_service_terms(validated_data)
         self.create_terms(validated_data.pop('service_terms'), instance)
@@ -208,21 +206,21 @@ class CreateServiceSerializer(ModelSerializer):
 class CatalogSerializer(CategorySerializer):
     """Подписка"""
 
-    name = serializers.ReadOnlyField(source='category.name')
     services = serializers.SerializerMethodField()
 
 
     class Meta:
-        model = CategoryInService
+        model = Category
         fields = (
             'name',
+            'text',
             'services',
         )
 
     def get_services(self, obj):
         """Получение списка рецептов автора"""
 
-        categorys_services = obj.category.service.all()[:SERVICES_LIMIT]
+        categorys_services = obj.services.all()[:SERVICES_LIMIT]
 
         if categorys_services:
             serializer = AdditionalForServiceSerializer(
@@ -235,8 +233,8 @@ class CatalogSerializer(CategorySerializer):
         return []
 
 
-class ServiceTermsForCatalogSerializer(serializers.ModelSerializer):
-    """Сериализатор для компактного отображения рецептов"""
+class ServiceTermsForCatalogSerializer(ModelSerializer):
+    """Сериализатор для компактного отображения условий сервиса"""
 
     class Meta:
         """Мета-параметры сериализатора"""
@@ -245,12 +243,34 @@ class ServiceTermsForCatalogSerializer(serializers.ModelSerializer):
         fields = ('name', 'duration', 'cashback')
 
 
-class AdditionalForServiceSerializer(serializers.ModelSerializer):
-    """Сериализатор для компактного отображения рецептов"""
+class AdditionalForServiceSerializer(ModelSerializer):
+    """Сериализатор для компактного отображения сервисов"""
     service_terms = ServiceTermsForCatalogSerializer()
 
     class Meta:
         """Мета-параметры сериализатора"""
 
         model = Service
-        fields = ('name', 'image', 'service_terms')
+        fields = ('id', 'name', 'image', 'service_terms')
+
+class SubscriptionSerializer(ModelSerializer):
+    """Подписка"""
+
+    id = serializers.ReadOnlyField(source='user_subscriptions.id')
+    name = serializers.ReadOnlyField(source='user_subscriptions.name')
+    category = serializers.ReadOnlyField(source='user_subscriptions.category')
+    image = serializers.ReadOnlyField(source='user_subscriptions.image')
+    service_terms = ServiceTermsForCatalogSerializer(
+        source='user_subscriptions.service_terms'
+    )
+
+    class Meta:
+        model = Subscription
+        fields = (
+            'id',
+            'name',
+            'category',
+            'image',
+            'text',
+            'service_terms',
+        )

@@ -117,7 +117,7 @@ class Service(models.Model):
         ],
         verbose_name='Название сервиса'
     )
-    category = models.ManyToManyField(
+    category = models.ForeignKey(
         Category,
         related_name='services',
         on_delete=models.CASCADE,
@@ -174,40 +174,19 @@ class TermsInService(models.Model):
     )
 
 
-class CategoryInService(models.Model):
-    category = models.ForeignKey(
-        Terms,
-        on_delete=models.CASCADE,
-        related_name='category_services',
-        verbose_name='Рецепт',
-    )
-    service = models.ForeignKey(
-        Service,
-        on_delete=models.CASCADE,
-        verbose_name='Ингредиент',
-        related_name='service_categories'
-    )
-
-
 class Subscription(models.Model):
     """Модель подписки."""
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='subscription',
+        related_name='subscriber',
         verbose_name='Подписчик',
     )
     servece = models.ForeignKey(
         Service,
         on_delete=models.CASCADE,
-        related_name='subscription',
+        related_name='user_subscriptions',
         verbose_name='Сервис',
-    )
-    terms = models.ForeignKey(
-        Terms,
-        on_delete=models.CASCADE,
-        related_name='subscription',
-        verbose_name='Условия',
     )
 
     class Meta:
@@ -217,3 +196,4 @@ class Subscription(models.Model):
 
     def __str__(self):
         return f'{self.user} подписан на {self.servece}'
+

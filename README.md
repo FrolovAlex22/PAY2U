@@ -1,1 +1,1 @@
-# praktikum_new_diplom
+# PAY2U Хакатон яндекс практикума
