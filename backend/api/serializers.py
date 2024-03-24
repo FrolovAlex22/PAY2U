@@ -9,7 +9,7 @@ from users.models import User
 from services.models import BankCard, Category, Service, Subscription, Terms
 
 
-class UserGETSerializer(UserSerializer):
+class UserSerializer(UserSerializer):
     """При просмотре страницы пользователя"""
 
     class Meta:
@@ -61,31 +61,29 @@ class ServiceWithTermsSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'image', 'text', 'subscription_terms')
 
 
-class TermDetailSerializer(serializers.ModelSerializer):
-    service_name = serializers.SerializerMethodField()
-
-    def get_service_name(self, obj):
-        return obj.service.name
-
-    class Meta:
-        model = Terms
-        fields = ('id', 'name', 'duration', 'cashback', 'price', 'service_name')
-
-
 class BankCardSerializer(serializers.ModelSerializer):
     class Meta:
         model = BankCard
         fields = ['id', 'card_number']
 
 
+class TermDetailSerializer(serializers.ModelSerializer):
+    service_name = serializers.CharField(source='service.name', read_only=True)
+    service_image = serializers.ImageField(source='service.image', read_only=True)
+    service_category = serializers.CharField(source='service.category', read_only=True)
+    class Meta:
+        model = Terms
+        fields = ('id', 'name', 'subscription_type', 'duration', 'cashback', 'price', 'service_name', 'service_image', 'service_category')
+
+
+
 class SubscriptionSerializer(serializers.ModelSerializer):
     bank_card_details = BankCardSerializer(source='bank_card', read_only=True)
-    service_details = ServiceSerializer(source='service', read_only=True)
-    terms_details = TermsSerializer(source='terms', read_only=True)
+    terms_details = TermDetailSerializer(source='terms', read_only=True)
 
     class Meta:
         model = Subscription
-        fields = ['service', 'terms', 'start_date', 'end_date', 'bank_card_details', 'service_details', 'terms_details']
+        fields = ['start_date', 'end_date', 'bank_card_details', 'terms_details']
         extra_kwargs = {'end_date': {'required': False}}
 
     def create(self, validated_data):
@@ -115,3 +113,14 @@ class SubscriptionSerializer(serializers.ModelSerializer):
             subscription = Subscription.objects.create(**validated_data, bank_card=bank_card)
 
         return subscription
+
+
+class ExpenseSerializer(serializers.ModelSerializer):
+    service_name = serializers.CharField(source='service.name')
+    category_name = serializers.CharField(source='service.category.name')
+    price = serializers.DecimalField(source='terms.price', max_digits=10, decimal_places=2)
+    cashback = serializers.DecimalField(source='terms.cashback', max_digits=10, decimal_places=2)
+
+    class Meta:
+        model = Subscription
+        fields = ['service_name', 'category_name', 'price', 'cashback', 'start_date']
