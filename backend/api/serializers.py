@@ -130,17 +130,6 @@ class SubscriptionSerializer(serializers.ModelSerializer): # при обновл
 
         return subscription
 
-class ExpenseSerializer(serializers.ModelSerializer):
-    service_name = serializers.CharField(source='service.name')
-    category_name = serializers.CharField(source='service.category.name')
-    price = serializers.DecimalField(source='terms.price', max_digits=10, decimal_places=2)
-    cashback = serializers.DecimalField(source='terms.cashback', max_digits=10, decimal_places=2)
-
-    class Meta:
-        model = Subscription
-        fields = ['service_name', 'category_name', 'price', 'cashback', 'start_date']
-
-
 
 class CashbackSerializer(serializers.ModelSerializer):
     service_name = serializers.ReadOnlyField(source='service.name')

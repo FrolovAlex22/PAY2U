@@ -7,12 +7,11 @@ from .serializers import (
     ServiceSerializer,
     TermDetailSerializer,
     SubscriptionSerializer,
-    CashbackSerializer
+    CashbackSerializer,
     CategorySerializer
 )
 from services.models import Category, Service, Subscription, Terms
 from rest_framework.response import Response
-from rest_framework.generics import ListAPIView
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
