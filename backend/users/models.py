@@ -10,7 +10,7 @@ class User(AbstractUser):
         max_length=254,
         unique=True,
         db_index=True,
-        verbose_name='Имейл'
+        verbose_name="Email"
     )
     username = models.CharField(
         max_length=150,
@@ -26,7 +26,9 @@ class User(AbstractUser):
         ],
         verbose_name='Имя пользователя'
     )
-    phone_number = models.CharField(
+    first_name = models.CharField("Имя", max_length=255)
+    last_name = models.CharField("Фамилия", max_length=255)
+    phone_number = models.CharField( # обратить внимание на это поле
         validators=[
             RegexValidator(
                 regex=r'^\+?1?\d{9,15}$',
@@ -36,17 +38,9 @@ class User(AbstractUser):
         max_length=17,
         verbose_name='Телефонный номер',
     )
-    balance = models.PositiveIntegerField(
-        default=10000,
-        verbose_name='Баланс'
-    )
-    password = models.CharField(
-        max_length=150,
-        verbose_name='Пароль',
-    )
 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['username', 'phone_number']
+    REQUIRED_FIELDS = ["username", 'phone_number', "first_name", "last_name"]
 
     class Meta:
         ordering = ('id',)
