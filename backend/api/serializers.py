@@ -23,6 +23,21 @@ class UserSerializer(UserSerializer):
         )
 
 
+
+class CustomUserCreateSerializer(UserSerializer):
+    """При создании пользователя"""
+
+    class Meta:
+        model = User
+        fields = (
+            'email',
+            'id',
+            'username',
+            'phone_number',
+            'password',
+        )
+
+
 class CategorySerializer(serializers.ModelSerializer):
 
     class Meta:
@@ -114,3 +129,26 @@ class SubscriptionSerializer(serializers.ModelSerializer): # при обновл
             subscription = Subscription.objects.create(**validated_data, bank_card=bank_card)
 
         return subscription
+
+class ExpenseSerializer(serializers.ModelSerializer):
+    service_name = serializers.CharField(source='service.name')
+    category_name = serializers.CharField(source='service.category.name')
+    price = serializers.DecimalField(source='terms.price', max_digits=10, decimal_places=2)
+    cashback = serializers.DecimalField(source='terms.cashback', max_digits=10, decimal_places=2)
+
+    class Meta:
+        model = Subscription
+        fields = ['service_name', 'category_name', 'price', 'cashback', 'start_date']
+
+
+
+class CashbackSerializer(serializers.ModelSerializer):
+    service_name = serializers.ReadOnlyField(source='service.name')
+    category = serializers.ReadOnlyField(source='service.category')
+    image = serializers.ReadOnlyField(source='service.image')
+    price = serializers.ReadOnlyField(source='terms.price')
+    cashback = serializers.ReadOnlyField(source='terms.cashback')
+
+    class Meta:
+        model = Subscription
+        fields = ['service_name', 'category', 'image', 'price', 'cashback', 'start_date']
