@@ -7,24 +7,115 @@ from .serializers import (
     UserSerializer,
     CategorySerializer,
     TermDetailSerializer,
-    SubscriptionSerializer
+    SubscriptionSerializer,
+    CashbackSerializer
 )
 from services.models import Category, Service, Subscription, Terms
 from rest_framework.response import Response
 from rest_framework.generics import RetrieveAPIView, ListAPIView
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
+from djoser.views import UserViewSet
+from users.models import User
+from rest_framework.permissions import (
+    IsAuthenticatedOrReadOnly,
+    AllowAny,
+    IsAuthenticated
+)
+from rest_framework.pagination import PageNumberPagination
+from rest_framework.decorators import action
 
 
-class MeView(APIView): # представление взять у Саши, к нему добавить action методы для расчета кэшбека, оплаты и расходов
+class CustomUserViewSet(UserViewSet):
+    """Вьюсет для работы с обьектами класса User"""
 
-    def get(self, request, *args, **kwargs):
-        serializer = UserSerializer(request.user)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = (IsAuthenticatedOrReadOnly,)
+    pagination_class = PageNumberPagination
 
-    def put(self, request, *args, **kwargs):
-        user = request.user
-        serializer = UserSerializer(user, data=request.data)
+    @action(
+        detail=False,
+        methods=('get',),
+        permission_classes=(IsAuthenticated,),
+    )
+    def cashback(self, request):
+        """Кэшбэк пользователя"""
+        user = self.request.user
+        queryset = user.subscriptions.all()
+        if not queryset:
+            return Response(
+                {'errors': 'Чтобы увидеть кэшбэк, нужно'
+                 'подписаться хотябы на 1 сервис!'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        pages = self.paginate_queryset(queryset)
+        serializer = CashbackSerializer(
+            pages, many=True, context={'request': request}
+        )
+        return self.get_paginated_response(serializer.data)
+
+    @action(
+        detail=False,
+        methods=('get',),
+        permission_classes=(IsAuthenticated,),
+    )
+    def expenses(self, request):
+        """Расходы пользователя"""
+        user = self.request.user
+        queryset = user.subscriptions.all()
+        if not queryset:
+            return Response(
+                {'errors': 'Чтобы увидеть расходы, нужно'
+                 'подписаться хотябы на 1 сервис!'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        pages = self.paginate_queryset(queryset)
+        serializer = CashbackSerializer(
+            pages, many=True, context={'request': request}
+        )
+        return self.get_paginated_response(serializer.data)
+
+    @action(
+        detail=False,
+        methods=('get',),
+        permission_classes=(IsAuthenticated,),
+    )
+    def paids(self, request):
+        """К оплате в этом месяце пользователя"""
+        user = self.request.user
+        queryset = user.subscriptions.all()
+        if not queryset:
+            return Response(
+                {'errors': 'Чтобы увидеть сколько нужно оплатить, нужно'
+                 'подписаться хотябы на 1 сервис!'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        pages = self.paginate_queryset(queryset)
+        serializer = CashbackSerializer(
+            pages, many=True, context={'request': request}
+        )
+        return self.get_paginated_response(serializer.data)
+
+    @action(detail=False,
+            methods=['GET', 'PATCH'],
+            url_path='me',
+            url_name='me',
+            permission_classes=(IsAuthenticated,))
+    def me(self, request):
+        if request.method == 'GET':
+            serializer = UserSerializer(
+                request.user,
+                context={'request': request}
+            )
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        serializer = UserSerializer(
+            request.user,
+            data=request.data,
+            partial=True,
+            context={'request': request}
+        )
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)

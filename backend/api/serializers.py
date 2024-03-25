@@ -23,6 +23,20 @@ class UserSerializer(UserSerializer):
         )
 
 
+class CustomUserCreateSerializer(UserSerializer):
+    """При создании пользователя"""
+
+    class Meta:
+        model = User
+        fields = (
+            'email',
+            'id',
+            'username',
+            'phone_number',
+            'password',
+        )
+
+
 class ServiceSerializer(serializers.ModelSerializer):
     min_price = serializers.SerializerMethodField()
     max_cashback = serializers.SerializerMethodField()
@@ -124,3 +138,16 @@ class ExpenseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Subscription
         fields = ['service_name', 'category_name', 'price', 'cashback', 'start_date']
+
+
+
+class CashbackSerializer(serializers.ModelSerializer):
+    service_name = serializers.ReadOnlyField(source='service.name')
+    category = serializers.ReadOnlyField(source='service.category')
+    image = serializers.ReadOnlyField(source='service.image')
+    price = serializers.ReadOnlyField(source='terms.price')
+    cashback = serializers.ReadOnlyField(source='terms.cashback')
+
+    class Meta:
+        model = Subscription
+        fields = ['service_name', 'category', 'image', 'price', 'cashback', 'start_date']

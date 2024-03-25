@@ -19,8 +19,7 @@ class Command(BaseCommand):
             next(reader)
             categorys = [
                 Category(
-                    name=row[0],
-                    text=row[1],
+                    name=row[0]
                 )
                 for row in reader
             ]
