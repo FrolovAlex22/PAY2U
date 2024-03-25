@@ -30,7 +30,7 @@ class CustomUserViewSet(UserViewSet):
     queryset = User.objects.all()
     serializer_class = CustomUserSerializer
     permission_classes = (IsAuthenticatedOrReadOnly,)
-    pagination_class = PageNumberPagination 
+    pagination_class = PageNumberPagination
 
     @action(
         detail=False,

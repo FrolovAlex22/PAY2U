@@ -40,6 +40,11 @@ class User(AbstractUser):
         default=10000,
         verbose_name='Баланс'
     )
+    credit_cart = ...
+
+    comparison_sheet = ...
+    
+
     password = models.CharField(
         max_length=150,
         verbose_name='Пароль',
