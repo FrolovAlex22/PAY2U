@@ -23,6 +23,7 @@ class UserSerializer(UserSerializer):
         )
 
 
+
 class CustomUserCreateSerializer(UserSerializer):
     """При создании пользователя"""
 
@@ -37,27 +38,29 @@ class CustomUserCreateSerializer(UserSerializer):
         )
 
 
-class ServiceSerializer(serializers.ModelSerializer):
-    min_price = serializers.SerializerMethodField()
-    max_cashback = serializers.SerializerMethodField()
-
-    def get_min_price(self, obj):
-        return obj.subscription_terms.aggregate(min_price=Min('price'))['min_price']
-
-    def get_max_cashback(self, obj):
-        return obj.subscription_terms.aggregate(max_cashback=Max('cashback'))['max_cashback']
-
-    class Meta:
-        model = Service
-        fields = ('name', 'image', 'text', 'category', 'min_price', 'max_cashback')
-
-
-class CategorySerializer(serializers.ModelSerializer): # фильтрацию сделать для раздела сравнения
-    services = ServiceSerializer(many=True, read_only=True)
+class CategorySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Category
-        fields = ('id', 'name', 'services')
+        fields = ('id', 'name')
+
+
+class ServiceSerializer(serializers.ModelSerializer):
+    min_price = serializers.SerializerMethodField()
+    max_cashback = serializers.SerializerMethodField()
+    category = CategorySerializer(read_only=True)
+
+    class Meta:
+        model = Service
+        fields = ('name', 'image', 'subscription_type', 'text', 'category', 'min_price', 'max_cashback', 'is_featured')
+
+    def get_min_price(self, obj):
+        min_price = obj.subscription_terms.aggregate(min_price=Min('price'))['min_price']
+        return min_price if min_price is not None else 0
+
+    def get_max_cashback(self, obj):
+        max_cashback = obj.subscription_terms.aggregate(max_cashback=Max('cashback'))['max_cashback']
+        return max_cashback if max_cashback is not None else 0
 
 
 class TermsSerializer(serializers.ModelSerializer):
@@ -75,12 +78,6 @@ class ServiceWithTermsSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'image', 'text', 'subscription_terms')
 
 
-class BankCardSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = BankCard
-        fields = ['id', 'card_number']
-
-
 class TermDetailSerializer(serializers.ModelSerializer):
     service_name = serializers.CharField(source='service.name', read_only=True)
     service_image = serializers.ImageField(source='service.image', read_only=True)
@@ -89,6 +86,11 @@ class TermDetailSerializer(serializers.ModelSerializer):
         model = Terms
         fields = ('id', 'name', 'subscription_type', 'duration', 'cashback', 'price', 'service_name', 'service_image', 'service_category')
 
+
+class BankCardSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BankCard
+        fields = ['id', 'card_number']
 
 
 class SubscriptionSerializer(serializers.ModelSerializer): # при обновление подписки даты просуммировать
@@ -106,10 +108,10 @@ class SubscriptionSerializer(serializers.ModelSerializer): # при обновл
 
         bank_card = BankCard.objects.filter(user=user).first()
         if not bank_card:
-            raise serializers.ValidationError("User does not have a bank card to associate with the subscription.")
+            raise serializers.ValidationError("У пользователя нет банковской карты для привязки к подписке.")
 
         if bank_card.balance < terms.price:
-            raise serializers.ValidationError("Not enough funds on the bank card to subscribe.")
+            raise serializers.ValidationError("На банковской карте недостаточно средств для оформления подписки.")
 
         with transaction.atomic():
             bank_card.balance -= terms.price
@@ -127,7 +129,6 @@ class SubscriptionSerializer(serializers.ModelSerializer): # при обновл
             subscription = Subscription.objects.create(**validated_data, bank_card=bank_card)
 
         return subscription
-
 
 class ExpenseSerializer(serializers.ModelSerializer):
     service_name = serializers.CharField(source='service.name')
