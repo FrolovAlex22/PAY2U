@@ -210,7 +210,7 @@ class ServiceViewSet(viewsets.ReadOnlyModelViewSet):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         if self.request.method == 'DELETE':
-            if not user.subscriptions.filter(service=id):
+            if not user.subscriptions.filter(service=pk):
                 return Response(
                     {'errors': 'Вы не подписаны на этоn сервис!'},
                     status=status.HTTP_400_BAD_REQUEST,
