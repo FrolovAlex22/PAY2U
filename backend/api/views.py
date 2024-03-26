@@ -7,7 +7,7 @@ from .serializers import (
     ServiceSerializer,
     TermDetailSerializer,
     SubscriptionSerializer,
-    CashbackSerializer
+    CashbackSerializer,
     CategorySerializer
 )
 from services.models import Category, Service, Subscription, Terms
