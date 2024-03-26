@@ -102,7 +102,7 @@ class CustomUserViewSet(UserViewSet):
             url_path='me',
             url_name='me',
             permission_classes=(IsAuthenticated,))
-    def me(self, request):
+    def profile(self, request):
         if request.method == 'GET':
             serializer = UserSerializer(
                 request.user,
@@ -149,7 +149,6 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
-
 
 
 class ExpensesView(ListAPIView):
