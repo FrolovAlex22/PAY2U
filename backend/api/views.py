@@ -1,3 +1,7 @@
+
+from datetime import datetime, timedelta
+
+from django.utils import timezone
 from .filters import ServiceFilter, SubscriptionFilter
 from rest_framework import viewsets, status
 from rest_framework.views import APIView
@@ -11,7 +15,7 @@ from .serializers import (
     CategorySerializer,
     SubSer
 )
-from services.models import Category, Service, Subscription, Terms
+from services.models import Category, Service, Subscription, Terms, BankCard
 from rest_framework.response import Response
 from rest_framework.generics import ListAPIView
 from django.shortcuts import get_object_or_404
@@ -45,38 +49,11 @@ class CustomUserViewSet(UserViewSet):
         """Список подписок пользователя"""
         user = self.request.user
         queryset = user.subscriptions.all()
-        # serializer = SubSer(request.user, context={'request': request}
-        # )
-        # return Response(serializer.data)
         pages = self.paginate_queryset(queryset)
         serializer = SubSer(
             pages, many=True, context={'request': request}
         )
         return self.get_paginated_response(serializer.data)
-
-    @action(
-        detail=True,
-        methods=('post', 'delete'),)
-    def subscribe(self, request, id=None):
-        """Подписка на сервис"""
-        user = self.request.user
-        service = get_object_or_404(Service, pk=id)
-
-        if self.request.method == 'POST':
-            bank_cards = user.bank_cards.all(is_active=True)
-            bank_cards = service.subscription_terms.all(is_active=True)
-
-            if user.subscriber.filter(service=id):
-                return Response(
-                    {'errors': 'Подписка уже оформлена!'},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
-            queryset = Subscription.objects.create(service=service, user=user)
-            serializer = SubscriptionSerializer(
-                queryset, context={'request': request}
-            )
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @action(
         detail=False,
@@ -128,6 +105,7 @@ class CustomUserViewSet(UserViewSet):
     def paids(self, request):
         """К оплате в этом месяце пользователя"""
         user = self.request.user
+        
         queryset = user.subscriptions.all()
         if not queryset:
             return Response(
@@ -187,6 +165,65 @@ class ServiceViewSet(viewsets.ReadOnlyModelViewSet):
         term = get_object_or_404(Terms, pk=term_pk, service=service)
         serializer = TermDetailSerializer(term)
         return Response(serializer.data)
+    
+    
+    @action(
+        detail=True,
+        methods=('post', 'delete'),)
+    def subscribe(self, request, pk=None):
+        """Подписка на сервис"""
+        user = self.request.user
+        service = get_object_or_404(Service, id=pk)
+        queryset = user.subscriptions.all()
+        bank_card = BankCard.objects.filter(user=user).first()
+        terms = Terms.objects.filter(service=service).first()
+
+        if not bank_card:
+            return Response(
+                {'errors': 'У пользователя нет банковской карты для привязки к подписке.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if bank_card.balance < terms.price:
+            return Response(
+                {'errors': '"На банковской карте недостаточно средств для оформления подписки.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if self.request.method == 'POST':
+            bank_card.balance -= terms.price
+            bank_card.save()
+
+            duration_mapping = {
+                "one_month": 30,
+                "three_months": 90,
+                "six_months": 180,
+                "one_year": 365,
+            }
+            duration_days = duration_mapping.get(terms.duration, 30)
+            start_date = timezone.now()
+            end_date = start_date + timedelta(days=duration_days)
+            queryset = Subscription.objects.create(service=service, user=user, terms = terms, start_date=start_date, end_date=end_date, bank_card=bank_card)
+            serializer = SubscriptionSerializer(
+                queryset, context={'request': request}
+            )
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        if self.request.method == 'DELETE':
+            if not user.subscriptions.filter(service=id):
+                return Response(
+                    {'errors': 'Вы не подписаны на этоn сервис!'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            subscription = get_object_or_404(
+                Subscription, user=user, service=service
+            )
+            subscription.delete()
+
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
 class SubscriptionViewSet(viewsets.ModelViewSet):

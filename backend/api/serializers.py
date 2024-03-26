@@ -1,3 +1,4 @@
+import datetime
 from django.utils import timezone
 from django.db import transaction
 from datetime import timedelta
@@ -149,11 +150,14 @@ class CashbackSerializer(serializers.ModelSerializer):
     price = serializers.DecimalField(source='terms.price', max_digits=10, decimal_places=2)
     cashback = serializers.DecimalField(source='terms.cashback', max_digits=10, decimal_places=2)
     month_today = serializers.SerializerMethodField()
+    day_of_payment = serializers.SerializerMethodField()
+    cashback = serializers.SerializerMethodField()
+    pay_this_month = serializers.SerializerMethodField()
 
 
     class Meta:
         model = Subscription
-        fields = ['service_name', 'category', 'image', 'price', 'cashback', 'start_date', 'month_today']
+        fields = ['service_name', 'category', 'image', 'price', 'cashback', 'day_of_payment', 'month_today', 'cashback']
 
     def get_month_today(self, obj):
         months = {
@@ -164,6 +168,19 @@ class CashbackSerializer(serializers.ModelSerializer):
         month_today = timezone.now().month
 
         return months[month_today]
+
+
+    def get_day_of_payment(self, obj):
+        month_today = timezone.now().month
+        end_day = obj.end_date
+
+        return f'{end_day.day}.{month_today}.{end_day.year}'
+
+    def get_cashback(self, obj):
+        return int(obj.terms.price / 100 * obj.terms.cashback)
+
+
+
 
 
 class SubSer(serializers.ModelSerializer):
