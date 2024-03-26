@@ -6,7 +6,7 @@ from django.db import models
 User = get_user_model()
 
 
-class Category(models.Model): # лучшие предложения как категория, реализовать поиск
+class Category(models.Model):
     """Модель для описания категории"""
     name = models.CharField(
         max_length=150,
@@ -64,6 +64,7 @@ class Service(models.Model):
     text = models.TextField(
         verbose_name='Описание сервиса'
     )
+    is_featured = models.BooleanField(default=False, verbose_name='Лучшее предложение')
 
     class Meta:
         """Мета-параметры модели"""
@@ -143,6 +144,7 @@ class BankCard(models.Model):
         default=5000,
         verbose_name='Баланс'
     )
+    is_active = models.BooleanField(default=False, verbose_name='Активная карта')
 
     class Meta:
         verbose_name = 'Банковская карта'

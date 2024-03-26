@@ -1,18 +1,18 @@
-from .filters import SubscriptionFilter
+from .filters import ServiceFilter, SubscriptionFilter
 from rest_framework import viewsets, status
 from rest_framework.views import APIView
 from .serializers import (
-    ExpenseSerializer,
     ServiceWithTermsSerializer,
     UserSerializer,
-    CategorySerializer,
+    ServiceSerializer,
     TermDetailSerializer,
     SubscriptionSerializer,
     CashbackSerializer
+    CategorySerializer
 )
 from services.models import Category, Service, Subscription, Terms
 from rest_framework.response import Response
-from rest_framework.generics import RetrieveAPIView, ListAPIView
+from rest_framework.generics import ListAPIView
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
@@ -24,6 +24,7 @@ from rest_framework.permissions import (
 )
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.decorators import action
+from rest_framework.filters import SearchFilter
 
 
 class CustomUserViewSet(UserViewSet):
@@ -116,9 +117,6 @@ class CustomUserViewSet(UserViewSet):
             partial=True,
             context={'request': request}
         )
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
@@ -126,14 +124,24 @@ class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = CategorySerializer
 
 
-class ServiceDetailView(RetrieveAPIView):
+class ServiceViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Service.objects.all()
-    serializer_class = ServiceWithTermsSerializer
+    serializer_class = ServiceSerializer
+    filter_backends = [DjangoFilterBackend, SearchFilter]
+    search_fields = ['name']
+    filterset_class = ServiceFilter
 
-class TermDetailAPIView(APIView):
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return ServiceSerializer
+        elif self.action == 'retrieve':
+            return ServiceWithTermsSerializer
+        return super().get_serializer_class()
 
-    def get(self, request, service_pk, term_pk):
-        term = get_object_or_404(Terms, pk=term_pk, service__pk=service_pk)
+    @action(detail=True, methods=('get',), url_path='terms/(?P<term_pk>[^/.]+)')
+    def term_detail(self, request, pk=None, term_pk=None):
+        service = self.get_object()
+        term = get_object_or_404(Terms, pk=term_pk, service=service)
         serializer = TermDetailSerializer(term)
         return Response(serializer.data)
 
@@ -149,12 +157,3 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
-
-
-class ExpensesView(ListAPIView):
-    serializer_class = ExpenseSerializer
-    filter_backends = [DjangoFilterBackend]
-    filterset_class = SubscriptionFilter
-
-    def get_queryset(self):
-        return Subscription.objects.filter(user=self.request.user)
