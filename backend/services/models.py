@@ -175,10 +175,12 @@ class Subscription(models.Model):
         verbose_name='Тариф',
     )
     start_date = models.DateTimeField(
+        blank=True,
         default=timezone.now,
         verbose_name='Дата начала подписки'
     )
     end_date = models.DateTimeField(
+        blank=True,
         verbose_name='Дата окончания подписки'
     )
     bank_card = models.ForeignKey(

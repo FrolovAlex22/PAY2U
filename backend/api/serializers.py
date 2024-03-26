@@ -144,8 +144,8 @@ class ExpenseSerializer(serializers.ModelSerializer):
 
 class CashbackSerializer(serializers.ModelSerializer):
     service_name = serializers.ReadOnlyField(source='service.name')
-    category = serializers.ReadOnlyField(source='service.category')
-    image = serializers.ReadOnlyField(source='service.image')
+    category = serializers.ReadOnlyField(source='service.category.name')
+    image = serializers.ImageField(source='service.image')
     price = serializers.DecimalField(source='terms.price', max_digits=10, decimal_places=2)
     cashback = serializers.DecimalField(source='terms.cashback', max_digits=10, decimal_places=2)
     month_today = serializers.SerializerMethodField()
@@ -155,7 +155,7 @@ class CashbackSerializer(serializers.ModelSerializer):
         model = Subscription
         fields = ['service_name', 'category', 'image', 'price', 'cashback', 'start_date', 'month_today']
 
-    def get_month_today():
+    def get_month_today(self, obj):
         months = {
             1: 'январь', 2: 'февраль', 3: 'март', 4: 'апрель', 5: 'май',
             6: 'июнь', 7: 'июль', 8: 'август', 9: 'сентябрь', 10: 'октябрь',
@@ -164,3 +164,17 @@ class CashbackSerializer(serializers.ModelSerializer):
         month_today = timezone.now().month
 
         return months[month_today]
+
+
+class SubSer(serializers.ModelSerializer):
+
+    service = serializers.ReadOnlyField(source='service.name')
+    category = serializers.ReadOnlyField(source='service.category.name')
+    image = serializers.ImageField(source='service.image')
+    price = serializers.IntegerField(source='terms.price')
+    cashback = serializers.IntegerField(source='terms.cashback')
+    bank_card = serializers.IntegerField(source='bank_card.card_number')
+
+    class Meta:
+        model = Subscription
+        fields = ['id', 'service', 'category', 'image', 'price', 'cashback', 'end_date', 'bank_card']
