@@ -6,6 +6,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+SUBSCRIBE_LIMIT = 3
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 

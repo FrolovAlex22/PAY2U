@@ -121,6 +121,8 @@ class Terms(models.Model):
         on_delete=models.CASCADE,
         verbose_name='Связанный сервис',
     )
+    is_featured = models.BooleanField(default=False, verbose_name='Выгодное предложение')
+
 
     class Meta:
         ordering = ('id',)
@@ -147,6 +149,7 @@ class BankCard(models.Model):
     is_active = models.BooleanField(default=False, verbose_name='Активная карта')
 
     class Meta:
+        ordering = ('id',)
         verbose_name = 'Банковская карта'
         verbose_name_plural = 'Банковские карты'
 
@@ -193,10 +196,35 @@ class Subscription(models.Model):
     )
 
     class Meta:
-        unique_together = ('user', 'service', 'terms')
+        # unique_together = ('user', 'service', 'terms')
         ordering = ('id',)
         verbose_name = 'Подписка'
         verbose_name_plural = 'Подписки'
 
     def __str__(self):
         return f'{self.user} подписан на {self.service}'
+
+
+class Comparison(models.Model):
+    """Модель сравнения."""
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='user_comparison',
+        verbose_name='пользователь',
+    )
+    service = models.ForeignKey(
+        Service,
+        on_delete=models.CASCADE,
+        related_name='service_comparison',
+        verbose_name='сервис',
+    )
+
+    class Meta:
+        ordering = ('id',)
+        verbose_name = 'Сравнение'
+        verbose_name_plural = 'Сравнении'
+
+    def __str__(self):
+        return f'{self.sercvice} в списке сранения пользователя {self.user}'

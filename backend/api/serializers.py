@@ -7,7 +7,8 @@ from rest_framework import serializers
 from django.db.models import Min, Max
 
 from users.models import User
-from services.models import BankCard, Category, Service, Subscription, Terms
+from services.models import BankCard, Category, Service, Subscription, Terms, Comparison
+from PAY2U.settings import SUBSCRIBE_LIMIT
 
 
 class UserSerializer(UserSerializer):
@@ -22,7 +23,6 @@ class UserSerializer(UserSerializer):
             'last_name',
             'phone_number'
         )
-
 
 
 class CustomUserCreateSerializer(UserSerializer):
@@ -183,7 +183,7 @@ class CashbackSerializer(serializers.ModelSerializer):
 
 
 
-class SubSer(serializers.ModelSerializer):
+class UserSubscribeSerializer(serializers.ModelSerializer):
 
     service = serializers.ReadOnlyField(source='service.name')
     category = serializers.ReadOnlyField(source='service.category.name')
@@ -195,3 +195,152 @@ class SubSer(serializers.ModelSerializer):
     class Meta:
         model = Subscription
         fields = ['id', 'service', 'category', 'image', 'price', 'cashback', 'end_date', 'bank_card']
+
+
+class TermsPriceCashbackSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Terms
+        fields = ['price', 'cashback']
+
+
+class BestOfferSerializer(serializers.ModelSerializer):
+    cashback = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Service
+        fields = ['id', 'name', 'image', 'cashback']
+
+    def get_cashback(self, obj):
+        terms = Terms.objects.filter(service=obj.id, is_featured=True)
+        serializer = TermsPriceCashbackSerializer(terms, many=True)
+        return serializer.data
+
+class SubscriptionForMaimPageSerializer(serializers.ModelSerializer):
+    service = serializers.ReadOnlyField(source='service.name')
+    price = serializers.ReadOnlyField(source='terms.price')
+    cashback = serializers.ReadOnlyField(source='terms.cashback')
+    image = serializers.ImageField(source='service.image')
+
+    class Meta:
+        model = Subscription
+        fields = ['id', 'service', 'image', 'price', 'cashback']
+
+
+class MainPageSerializer(serializers.ModelSerializer):
+    best_offer = serializers.SerializerMethodField()
+    subscription = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ['id' , 'best_offer', 'subscription']
+
+    def get_best_offer(self, obj):
+        best_offer = Service.objects.filter(is_featured=True)[:SUBSCRIBE_LIMIT]
+        if best_offer:
+            serializer = BestOfferSerializer(
+                best_offer,
+                many=True,
+            )
+            return serializer.data
+
+        return []
+    
+    def get_subscription(self, obj):
+        subscription = obj.subscriptions.all()[:SUBSCRIBE_LIMIT]
+        if subscription:
+            serializer = SubscriptionForMaimPageSerializer(
+                subscription,
+                many=True,
+            )
+            return serializer.data
+
+        return []
+
+class CatalogSerializer(CategorySerializer):
+    """Подписка"""
+
+    services = serializers.SerializerMethodField()
+
+
+    class Meta:
+        model = Category
+        fields = (
+            'name',
+            'services',
+        )
+
+    def get_services(self, obj):
+        """Получение списка рецептов автора"""
+
+        categorys_services = obj.services.all()[:SUBSCRIBE_LIMIT]
+
+        if categorys_services:
+            serializer = AdditionalForServiceSerializer(
+                categorys_services,
+                context={'request': self.context['request']},
+                many=True,
+            )
+            return serializer.data
+
+        return []
+
+
+class ServiceTermsForCatalogSerializer(serializers.ModelSerializer):
+    """Сериализатор для компактного отображения условий сервиса"""
+
+    class Meta:
+        """Мета-параметры сериализатора"""
+
+        model = Terms
+        fields = ('cashback', 'price')
+
+
+class ComparisonSerializer(serializers.ModelSerializer):
+    """Сериализатор для отображения сравнений"""
+    name = serializers.ReadOnlyField(source='service.name')
+    service_terms = serializers.SerializerMethodField()
+    image = serializers.ImageField(source='service.image')
+
+    class Meta:
+        """Мета-параметры сериализатора"""
+
+        model = Comparison
+        fields = ('id', 'name', 'image', 'service_terms')
+
+    def get_service_terms(self, obj):
+        """Получение списка рецептов автора"""
+
+        comparison_services = Terms.objects.filter(id=obj.service.id)
+
+        serializer = ServiceTermsForCatalogSerializer(
+                comparison_services,
+                context={'request': self.context['request']},
+                many=True,
+            )
+        return serializer.data
+
+
+
+
+class AdditionalForServiceSerializer(serializers.ModelSerializer):
+    """Сериализатор для компактного отображения сервисов"""
+    service_terms = serializers.SerializerMethodField()
+
+    class Meta:
+        """Мета-параметры сериализатора"""
+
+        model = Service
+        fields = ('id', 'name', 'image', 'service_terms')
+    
+    def get_service_terms(self, obj):
+        """Получение списка рецептов автора"""
+
+        categorys_services = Terms.objects.filter(id=obj.id)
+
+        serializer = ServiceTermsForCatalogSerializer(
+                categorys_services,
+                context={'request': self.context['request']},
+                many=True,
+            )
+        return serializer.data
