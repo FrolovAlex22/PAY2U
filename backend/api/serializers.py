@@ -41,15 +41,45 @@ class CustomUserCreateSerializer(UserSerializer):
 
 class CategorySerializer(serializers.ModelSerializer):
 
+    services = serializers.SerializerMethodField()
+
+
     class Meta:
         model = Category
-        fields = ('id', 'name')
+        fields = (
+            'id',
+            'name',
+            'services',
+        )
+
+    def get_services(self, obj):
+        """Получение списка рецептов автора"""
+
+        categorys_services = obj.services.all()[:SUBSCRIBE_LIMIT]
+
+        if categorys_services:
+            serializer = AdditionalForServiceSerializer(
+                categorys_services,
+                context={'request': self.context['request']},
+                many=True,
+            )
+            return serializer.data
+
+        return []
+
+
+class CategoryNameSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Category
+        fields = ('name')
+        
 
 
 class ServiceSerializer(serializers.ModelSerializer):
     min_price = serializers.SerializerMethodField()
     max_cashback = serializers.SerializerMethodField()
-    category = CategorySerializer(read_only=True)
+    category = CategoryNameSerializer(read_only=True)
 
     class Meta:
         model = Service
@@ -149,11 +179,10 @@ class CashbackSerializer(serializers.ModelSerializer):
     category = serializers.ReadOnlyField(source='service.category.name')
     image = serializers.ImageField(source='service.image')
     price = serializers.DecimalField(source='terms.price', max_digits=10, decimal_places=2)
-    cashback = serializers.DecimalField(source='terms.cashback', max_digits=10, decimal_places=2)
+    # cashback = serializers.DecimalField(source='terms.cashback', max_digits=10, decimal_places=2)
     month_today = serializers.SerializerMethodField()
     day_of_payment = serializers.SerializerMethodField()
     cashback = serializers.SerializerMethodField()
-    pay_this_month = serializers.SerializerMethodField()
 
 
     class Meta:
@@ -213,7 +242,7 @@ class BestOfferSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'image', 'cashback']
 
     def get_cashback(self, obj):
-        terms = Terms.objects.filter(service=obj.id, is_featured=True)
+        terms = Terms.objects.filter(service=obj.id, selected_conditions=True)
         serializer = TermsPriceCashbackSerializer(terms, many=True)
         return serializer.data
 
@@ -258,7 +287,7 @@ class MainPageSerializer(serializers.ModelSerializer):
 
         return []
 
-class CatalogSerializer(CategorySerializer):
+class CatalogSerializer(serializers.ModelSerializer):
     """Подписка"""
 
     services = serializers.SerializerMethodField()
@@ -267,6 +296,7 @@ class CatalogSerializer(CategorySerializer):
     class Meta:
         model = Category
         fields = (
+            'id',
             'name',
             'services',
         )
@@ -327,12 +357,13 @@ class ComparisonSerializer(serializers.ModelSerializer):
 class AdditionalForServiceSerializer(serializers.ModelSerializer):
     """Сериализатор для компактного отображения сервисов"""
     service_terms = serializers.SerializerMethodField()
+    in_comparison = serializers.SerializerMethodField()
 
     class Meta:
         """Мета-параметры сериализатора"""
 
         model = Service
-        fields = ('id', 'name', 'image', 'service_terms')
+        fields = ('id', 'name', 'image', 'service_terms', 'in_comparison')
     
     def get_service_terms(self, obj):
         """Получение списка рецептов автора"""
@@ -345,3 +376,12 @@ class AdditionalForServiceSerializer(serializers.ModelSerializer):
                 many=True,
             )
         return serializer.data
+
+
+    def get_in_comparison(self, obj):
+        """Получение списка рецептов автора"""
+        request = self.context.get('request', None)
+        user = request.user
+        if Comparison.objects.filter(user=user, service = obj.id):
+            return True
+        return False

@@ -129,6 +129,7 @@ class Terms(models.Model):
         on_delete=models.CASCADE,
         verbose_name='Связанный сервис',
     )
+    selected_conditions = models.BooleanField(default=False, verbose_name='выбранный сервис')
 
     class Meta:
         ordering = ('id',)
@@ -201,7 +202,7 @@ class Subscription(models.Model):
     )
 
     class Meta:
-        # unique_together = ('user', 'service', 'terms')
+        # unique_together = ('user', 'service', 'terms') Т.к. это цифры, возникает конфлик когда пользователь с id 5 подписываеться на сервис с id 5
         ordering = ('id',)
         verbose_name = 'Подписка'
         verbose_name_plural = 'Подписки'
@@ -232,4 +233,4 @@ class Comparison(models.Model):
         verbose_name_plural = 'Сравнении'
 
     def __str__(self):
-        return f'{self.sercvice} в списке сранения пользователя {self.user}'
+        return f'{self.service} в списке сранения пользователя {self.user}'

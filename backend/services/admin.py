@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Service, Category, Terms, BankCard, Subscription
+from .models import Service, Category, Terms, BankCard, Subscription, Comparison
 
 admin.site.empty_value_display = "Не задано"
 
@@ -23,4 +23,8 @@ class BankCardAdmin(admin.ModelAdmin):
 
 @admin.register(Subscription)
 class SubscriptionAdmin(admin.ModelAdmin):
+    pass
+
+@admin.register(Comparison)
+class ComparisonAdmin(admin.ModelAdmin):
     pass

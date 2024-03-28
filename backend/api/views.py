@@ -1,11 +1,11 @@
-from datetime import timedelta, timezone
+
+from datetime import datetime, timedelta
+
+from django.utils import timezone
 from .filters import ServiceFilter, SubscriptionFilter
 from rest_framework import viewsets, status
 from rest_framework.views import APIView
 from .serializers import (
-    CatalogSerializer,
-    ComparisonSerializer,
-    MainPageSerializer,
     ServiceWithTermsSerializer,
     UserSerializer,
     ServiceSerializer,
@@ -13,12 +13,16 @@ from .serializers import (
     SubscriptionSerializer,
     CashbackSerializer,
     CategorySerializer,
-    UserSubscribeSerializer
+    UserSubscribeSerializer,
+    MainPageSerializer,
+    CatalogSerializer,
+    ComparisonSerializer
 )
-from services.models import BankCard, Category, Comparison, Service, Subscription, Terms
+from services.models import Category, Service, Subscription, Terms, BankCard, Comparison
 from rest_framework.response import Response
+from rest_framework.generics import ListAPIView
 from django.shortcuts import get_object_or_404
-from django_filters.rest_framework import DjangoFilterBackend, OrderingFilter
+from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
 from users.models import User
 from rest_framework.permissions import (
@@ -28,7 +32,7 @@ from rest_framework.permissions import (
 )
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.decorators import action
-from rest_framework.filters import OrderingFilter, SearchFilter
+from rest_framework.filters import SearchFilter
 
 
 class MainPageAPIView(APIView):
@@ -49,6 +53,7 @@ class ComparisonAPIView(APIView):
             comparsion_list, many=True, context={'request': request},
             )
         return Response(serializer.data, status=status.HTTP_200_OK)
+
 
 class CustomUserViewSet(UserViewSet):
     """Вьюсет для работы с обьектами класса User"""
@@ -178,15 +183,12 @@ class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
         return self.get_paginated_response(serializer.data)
 
 
-
 class ServiceViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Service.objects.all()
     serializer_class = ServiceSerializer
-    filter_backends = [DjangoFilterBackend, OrderingFilter, SearchFilter]
+    filter_backends = [DjangoFilterBackend, SearchFilter]
     search_fields = ['name']
     filterset_class = ServiceFilter
-    ordering_fields = ['name', '-name', 'min_price', '-min_price', 'max_cashback', '-max_cashback'] # разобраться с популярностью
-
 
     def get_serializer_class(self):
         if self.action == 'list':
@@ -195,13 +197,17 @@ class ServiceViewSet(viewsets.ReadOnlyModelViewSet):
             return ServiceWithTermsSerializer
         return super().get_serializer_class()
 
-    @action(detail=True, methods=('get',), url_path='terms/(?P<term_pk>[^/.]+)')
+    @action(
+            detail=True,
+            methods=('get',),
+            url_path='terms/(?P<term_pk>[^/.]+)'
+        )
     def term_detail(self, request, pk=None, term_pk=None):
         service = self.get_object()
         term = get_object_or_404(Terms, pk=term_pk, service=service)
         serializer = TermDetailSerializer(term)
         return Response(serializer.data)
-
+    
     @action(
         detail=True,
         methods=('post', 'delete'),)
@@ -311,3 +317,4 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
     
+
