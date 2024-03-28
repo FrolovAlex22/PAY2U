@@ -2,6 +2,7 @@ from django.utils import timezone
 from django.contrib.auth import get_user_model
 from django.core.validators import RegexValidator
 from django.db import models
+from django.db.models import Min, Max
 
 User = get_user_model()
 
@@ -34,6 +35,12 @@ class Category(models.Model):
 
         return self.name
 
+class ServiceManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().annotate(
+            min_price=Min('subscription_terms__price'),
+            max_cashback=Max('subscription_terms__cashback')
+        )
 
 class Service(models.Model):
     """Модель для описания сервиса"""
@@ -65,6 +72,7 @@ class Service(models.Model):
         verbose_name='Описание сервиса'
     )
     is_featured = models.BooleanField(default=False, verbose_name='Лучшее предложение')
+    objects = ServiceManager()
 
     class Meta:
         """Мета-параметры модели"""

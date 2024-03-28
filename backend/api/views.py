@@ -18,7 +18,7 @@ from .serializers import (
 from services.models import BankCard, Category, Comparison, Service, Subscription, Terms
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
-from django_filters.rest_framework import DjangoFilterBackend
+from django_filters.rest_framework import DjangoFilterBackend, OrderingFilter
 from djoser.views import UserViewSet
 from users.models import User
 from rest_framework.permissions import (
@@ -28,7 +28,7 @@ from rest_framework.permissions import (
 )
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.decorators import action
-from rest_framework.filters import SearchFilter
+from rest_framework.filters import OrderingFilter, SearchFilter
 
 
 class MainPageAPIView(APIView):
@@ -179,12 +179,13 @@ class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 
-class ServiceViewSet(viewsets.ReadOnlyModelViewSet): #
+class ServiceViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Service.objects.all()
     serializer_class = ServiceSerializer
-    filter_backends = [DjangoFilterBackend, SearchFilter]
+    filter_backends = [DjangoFilterBackend, OrderingFilter, SearchFilter]
     search_fields = ['name']
     filterset_class = ServiceFilter
+    ordering_fields = ['name', '-name', 'min_price', '-min_price', 'max_cashback', '-max_cashback'] # разобраться с популярностью
 
 
     def get_serializer_class(self):

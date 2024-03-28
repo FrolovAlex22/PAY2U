@@ -56,11 +56,11 @@ class ServiceSerializer(serializers.ModelSerializer):
         fields = ('name', 'image', 'text', 'category', 'min_price', 'max_cashback', 'is_featured')
 
     def get_min_price(self, obj):
-        min_price = obj.subscription_terms.aggregate(min_price=Min('price'))['min_price']
+        min_price = obj.min_price
         return min_price if min_price is not None else 0
 
     def get_max_cashback(self, obj):
-        max_cashback = obj.subscription_terms.aggregate(max_cashback=Max('cashback'))['max_cashback']
+        max_cashback = obj.max_cashback
         return max_cashback if max_cashback is not None else 0
 
 
