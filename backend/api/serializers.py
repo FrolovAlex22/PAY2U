@@ -91,7 +91,7 @@ class TermDetailSerializer(serializers.ModelSerializer):
 class BankCardSerializer(serializers.ModelSerializer):
     class Meta:
         model = BankCard
-        fields = ['id', 'card_number']
+        fields = ['id', 'card_number', 'is_active', 'balance']
 
 
 class SubscriptionSerializer(serializers.ModelSerializer): # при обновление подписки даты просуммировать
@@ -105,14 +105,16 @@ class SubscriptionSerializer(serializers.ModelSerializer): # при обновл
 
     def create(self, validated_data):
         user = validated_data.get('user')
-        terms = validated_data.get('terms')
+        terms_id = validated_data.get('terms')
+        print(f"Trying to get Terms with ID: {terms_id}")
+        terms = Terms.objects.get(id=terms_id)
 
-        bank_card = BankCard.objects.filter(user=user).first()
+        bank_card = BankCard.objects.filter(user=user, is_active=True).first()
         if not bank_card:
-            raise serializers.ValidationError("У пользователя нет банковской карты для привязки к подписке.")
+            raise serializers.ValidationError("У пользователя нет активированной банковской карты для привязки к подписке.")
 
         if bank_card.balance < terms.price:
-            raise serializers.ValidationError("На банковской карте недостаточно средств для оформления подписки.")
+            raise serializers.ValidationError("На активированной банковской карте недостаточно средств для оформления подписки.")
 
         with transaction.atomic():
             bank_card.balance -= terms.price
@@ -179,9 +181,6 @@ class CashbackSerializer(serializers.ModelSerializer):
 
     def get_cashback(self, obj):
         return int(obj.terms.price / 100 * obj.terms.cashback)
-
-
-
 
 
 class UserSubscribeSerializer(serializers.ModelSerializer):

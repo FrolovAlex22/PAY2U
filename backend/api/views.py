@@ -3,6 +3,7 @@ from .filters import ServiceFilter, SubscriptionFilter
 from rest_framework import viewsets, status
 from rest_framework.views import APIView
 from .serializers import (
+    BankCardSerializer,
     CatalogSerializer,
     ComparisonSerializer,
     MainPageSerializer,
@@ -311,3 +312,28 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
     
+class BankCardView(APIView):
+
+    def get(self, request):
+        cards = BankCard.objects.filter(user=request.user)
+        serializer = BankCardSerializer(cards, many=True)
+        return Response(serializer.data)
+
+    def patch(self, request):
+        card_id = request.data.get('card_id')
+        if not card_id:
+            return Response({'error': 'Необходимо указать card_id'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            card_to_activate = BankCard.objects.get(id=card_id, user=request.user)
+        except BankCard.DoesNotExist:
+            return Response({'error': 'Карта не найдена'}, status=status.HTTP_404_NOT_FOUND)
+
+        if card_to_activate.is_active:
+            return Response({'message': 'Эта карта уже активирована'}, status=status.HTTP_200_OK)
+
+        BankCard.objects.filter(user=request.user, is_active=True).update(is_active=False)
+        card_to_activate.is_active = True
+        card_to_activate.save()
+
+        return Response({'message': 'Карта активирована'}, status=status.HTTP_200_OK)
