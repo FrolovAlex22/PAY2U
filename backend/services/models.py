@@ -175,10 +175,12 @@ class Subscription(models.Model):
         verbose_name='Тариф',
     )
     start_date = models.DateTimeField(
+        blank=True,
         default=timezone.now,
         verbose_name='Дата начала подписки'
     )
     end_date = models.DateTimeField(
+        blank=True,
         verbose_name='Дата окончания подписки'
     )
     bank_card = models.ForeignKey(
@@ -191,10 +193,35 @@ class Subscription(models.Model):
     )
 
     class Meta:
-        unique_together = ('user', 'service', 'terms')
+        # unique_together = ('user', 'service', 'terms')
         ordering = ('id',)
         verbose_name = 'Подписка'
         verbose_name_plural = 'Подписки'
 
     def __str__(self):
         return f'{self.user} подписан на {self.service}'
+
+
+class Comparison(models.Model):
+    """Модель сравнения."""
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='user_comparison',
+        verbose_name='пользователь',
+    )
+    service = models.ForeignKey(
+        Service,
+        on_delete=models.CASCADE,
+        related_name='service_comparison',
+        verbose_name='сервис',
+    )
+
+    class Meta:
+        ordering = ('id',)
+        verbose_name = 'Сравнение'
+        verbose_name_plural = 'Сравнении'
+
+    def __str__(self):
+        return f'{self.sercvice} в списке сранения пользователя {self.user}'

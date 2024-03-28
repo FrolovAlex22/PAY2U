@@ -1,7 +1,7 @@
 from django.urls import include, path
 from rest_framework import routers
 
-from .views import CategoryViewSet, CustomUserViewSet, ServiceViewSet, SubscriptionViewSet
+from .views import CategoryViewSet, CustomUserViewSet, ServiceViewSet, SubscriptionViewSet, MainPageAPIView, ComparisonAPIView
 
 
 router = routers.DefaultRouter()
@@ -13,7 +13,9 @@ router.register(r'user', CustomUserViewSet, basename='users')
 app_name = 'api'
 
 urlpatterns = [
-    # path("me/", MeView.as_view(), name="user-me"),
+    # path('expenses/', ExpensesView.as_view(), name='user-expenses'),
+    path('main/', MainPageAPIView.as_view(), name='main'),
+    path('comparison/', ComparisonAPIView.as_view(), name='main'),
     path('', include(router.urls)),
-    path("auth/", include("djoser.urls.jwt")),
+    path('auth/', include('djoser.urls.jwt')),
 ]
