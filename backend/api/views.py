@@ -1,11 +1,13 @@
-from datetime import timedelta, timezone
+import datetime
+from django.db.models import Q, Sum
+
 from .filters import ServiceFilter, SubscriptionFilter
 from rest_framework import viewsets, status
 from rest_framework.views import APIView
 from .serializers import (
     BankCardSerializer,
-    CatalogSerializer,
     ComparisonSerializer,
+    ExpenseSerializer,
     MainPageSerializer,
     ServiceWithTermsSerializer,
     UserSerializer,
@@ -23,7 +25,6 @@ from django_filters.rest_framework import DjangoFilterBackend, OrderingFilter
 from djoser.views import UserViewSet
 from users.models import User
 from rest_framework.permissions import (
-    IsAuthenticatedOrReadOnly,
     AllowAny,
     IsAuthenticated
 )
@@ -51,6 +52,7 @@ class ComparisonAPIView(APIView):
             )
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+
 class CustomUserViewSet(UserViewSet):
     """Вьюсет для работы с обьектами класса User"""
 
@@ -68,11 +70,11 @@ class CustomUserViewSet(UserViewSet):
         """Список подписок пользователя"""
         user = self.request.user
         queryset = user.subscriptions.all()
-        pages = self.paginate_queryset(queryset)
         serializer = UserSubscribeSerializer(
-            pages, many=True, context={'request': request}
+            queryset, many=True, context={'request': request}
         )
-        return self.get_paginated_response(serializer.data)
+        return Response(serializer.data)
+
 
     @action(
         detail=False,
@@ -82,44 +84,71 @@ class CustomUserViewSet(UserViewSet):
     def cashback(self, request):
         """Кэшбэк пользователя"""
         user = self.request.user
-        queryset = user.subscriptions.all()
-        if not queryset:
-            return Response(
-                {'errors': 'Чтобы увидеть кэшбэк, нужно'
-                 'подписаться хотябы на 1 сервис!'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        pages = self.paginate_queryset(queryset)
-        serializer = CashbackSerializer(
-            pages, many=True, context={'request': request}
-        )
-        return self.get_paginated_response(serializer.data)
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+        category = request.query_params.get('category')
+        filters = Q(user=user)
+        if category:
+            filters &= Q(service__category__name=category)
+
+        if start_date:
+            start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d').date()
+            filters &= Q(start_date__date__gte=start_date)
+        
+        if end_date:
+            end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d').date()
+            filters &= Q(start_date__date__lte=end_date)
+
+        queryset = Subscription.objects.filter(filters)
+        
+        if not queryset.exists():
+            return Response({'errors': 'По заданным параметрам подписок не найдено.'}, status=status.HTTP_404_NOT_FOUND)
+
+        total_cashback = sum(sub.terms.price * (sub.terms.cashback / 100) for sub in queryset)
+
+        serializer = CashbackSerializer(queryset, many=True, context={'request': request})
+        data = serializer.data
+        data.append({'total_cashback': total_cashback})
+        return Response(data)
+
 
     @action(
         detail=False,
         methods=('get',),
-        permission_classes=(IsAuthenticated,),
     )
     def expenses(self, request):
-        """Расходы пользователя"""
+        """Расходы пользователя с возможностью фильтрации по датам"""
         user = self.request.user
-        queryset = user.subscriptions.all()
-        if not queryset:
-            return Response(
-                {'errors': 'Чтобы увидеть расходы, нужно'
-                 'подписаться хотябы на 1 сервис!'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        pages = self.paginate_queryset(queryset)
-        serializer = CashbackSerializer(
-            pages, many=True, context={'request': request}
-        )
-        return self.get_paginated_response(serializer.data)
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+        category = request.query_params.get('category')
+        filters = Q(user=user)
+        if category:
+            filters &= Q(service__category__name=category)
+
+        if start_date:
+            start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d').date()
+            filters &= Q(start_date__date__gte=start_date)
+        
+        if end_date:
+            end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d').date()
+            filters &= Q(start_date__date__lte=end_date)
+
+        queryset = Subscription.objects.filter(filters)
+        
+        if not queryset.exists():
+            return Response({'errors': 'По заданным параметрам подписок не найдено.'}, status=status.HTTP_404_NOT_FOUND)
+        
+        total_expenses = queryset.aggregate(Sum('terms__price'))['terms__price__sum'] or 0
+        serializer = ExpenseSerializer(queryset, many=True, context={'request': request})
+        data = serializer.data
+        data.append({'total_expenses': total_expenses})
+        return Response(data)
+
 
     @action(
         detail=False,
         methods=('get',),
-        permission_classes=(IsAuthenticated,),
     )
     def paids(self, request):
         """К оплате в этом месяце пользователя"""
@@ -137,6 +166,7 @@ class CustomUserViewSet(UserViewSet):
             pages, many=True, context={'request': request}
         )
         return self.get_paginated_response(serializer.data)
+
 
     @action(detail=False,
             methods=['GET', 'PATCH'],
@@ -164,21 +194,6 @@ class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = CategorySerializer
     pagination_class = PageNumberPagination
 
-    @action(
-        detail=False,
-        methods=('get',),
-        permission_classes=(IsAuthenticated,),
-    )
-    def catalog(self, request):
-        """Каталог пользователя разбитый на категории"""
-        queryset = Category.objects.all()
-        pages = self.paginate_queryset(queryset)
-        serializer = CatalogSerializer(
-            pages, many=True, context={'request': request}
-        )
-        return self.get_paginated_response(serializer.data)
-
-
 
 class ServiceViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Service.objects.all()
@@ -202,69 +217,6 @@ class ServiceViewSet(viewsets.ReadOnlyModelViewSet):
         term = get_object_or_404(Terms, pk=term_pk, service=service)
         serializer = TermDetailSerializer(term)
         return Response(serializer.data)
-
-    @action(
-        detail=True,
-        methods=('post', 'delete'),)
-    def subscribe(self, request, pk=None):
-        """Подписка на сервис"""
-        user = self.request.user
-        service = get_object_or_404(Service, id=pk)
-        queryset = user.subscriptions.all()
-        bank_card = BankCard.objects.filter(user=user).first()
-        terms = Terms.objects.filter(service=service).first()
-
-        if not bank_card:
-            return Response(
-                {'errors': 'У пользователя нет банковской карты для привязки к подписке.'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        if self.request.method == 'POST':
-            duration_mapping = {
-                "one_month": 30,
-                "three_months": 90,
-                "six_months": 180,
-                "one_year": 360,
-            }
-            duration_days = duration_mapping.get(terms.duration, 30)
-            summ_to_pay = (terms.price * (duration_days / 30))
-            if bank_card.balance < summ_to_pay:
-                return Response(
-                    {'errors': 'На банковской карте недостаточно средств для оформления подписки.'},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-            start_date = timezone.now()
-            end_date = start_date + timedelta(days=duration_days)
-            if Subscription.objects.filter(service=service, user=user, terms = terms):
-                return Response(
-                    {'errors': 'Вы уже подписаны на этот сервер.'},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
-            queryset = Subscription.objects.create(service=service, user=user, terms = terms, start_date=start_date, end_date=end_date, bank_card=bank_card)
-            bank_card.balance -= summ_to_pay
-            bank_card.save()
-            serializer = SubscriptionSerializer(
-                queryset, context={'request': request}
-            )
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-        if self.request.method == 'DELETE':
-            if not user.subscriptions.filter(service=pk):
-                return Response(
-                    {'errors': 'Вы не подписаны на этоn сервис!'},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
-            subscription = get_object_or_404(
-                Subscription, user=user, service=service
-            )
-            subscription.delete()
-
-            return Response(status=status.HTTP_204_NO_CONTENT)
-
-        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
     @action(
@@ -300,6 +252,7 @@ class ServiceViewSet(viewsets.ReadOnlyModelViewSet):
 
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
+
 class SubscriptionViewSet(viewsets.ModelViewSet):
     queryset = Subscription.objects.all()
     serializer_class = SubscriptionSerializer
@@ -311,7 +264,8 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
-    
+
+
 class BankCardView(APIView):
 
     def get(self, request):
