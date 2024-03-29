@@ -11,11 +11,18 @@ SUBSCRIBE_LIMIT = 3
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-SECRET_KEY = os.getenv('SECRET_KEY')
+# SECRET_KEY = os.getenv('SECRET_KEY')
 
-DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
+# DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost').split()
+# ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost').split()
+
+SECRET_KEY = 'dsadsadsafkqwe2d2sa5d5as'
+
+DEBUG = True
+
+ALLOWED_HOSTS = ['localhost']
+
 
 
 INSTALLED_APPS = [

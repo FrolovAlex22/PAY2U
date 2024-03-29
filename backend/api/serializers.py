@@ -4,10 +4,10 @@ from datetime import timedelta
 from PAY2U.settings import SUBSCRIBE_LIMIT
 from djoser.serializers import UserSerializer
 from rest_framework import serializers
-from django.db.models import Min, Max
 
 from users.models import User
 from services.models import BankCard, Category, Comparison, Service, Subscription, Terms
+from django.db.models import Sum
 
 
 class UserSerializer(UserSerializer):
@@ -91,7 +91,7 @@ class TermDetailSerializer(serializers.ModelSerializer):
 class BankCardSerializer(serializers.ModelSerializer):
     class Meta:
         model = BankCard
-        fields = ['id', 'card_number']
+        fields = ['id', 'card_number', 'is_active', 'balance']
 
 
 class SubscriptionSerializer(serializers.ModelSerializer): # при обновление подписки даты просуммировать
@@ -105,14 +105,16 @@ class SubscriptionSerializer(serializers.ModelSerializer): # при обновл
 
     def create(self, validated_data):
         user = validated_data.get('user')
-        terms = validated_data.get('terms')
+        terms_id = validated_data.get('terms')
+        print(f"Trying to get Terms with ID: {terms_id}")
+        terms = Terms.objects.get(id=terms_id)
 
-        bank_card = BankCard.objects.filter(user=user).first()
+        bank_card = BankCard.objects.filter(user=user, is_active=True).first()
         if not bank_card:
-            raise serializers.ValidationError("У пользователя нет банковской карты для привязки к подписке.")
+            raise serializers.ValidationError("У пользователя нет активированной банковской карты для привязки к подписке.")
 
         if bank_card.balance < terms.price:
-            raise serializers.ValidationError("На банковской карте недостаточно средств для оформления подписки.")
+            raise serializers.ValidationError("На активированной банковской карте недостаточно средств для оформления подписки.")
 
         with transaction.atomic():
             bank_card.balance -= terms.price
@@ -136,52 +138,24 @@ class ExpenseSerializer(serializers.ModelSerializer):
     service_name = serializers.CharField(source='service.name')
     category_name = serializers.CharField(source='service.category.name')
     price = serializers.DecimalField(source='terms.price', max_digits=10, decimal_places=2)
-    cashback = serializers.DecimalField(source='terms.cashback', max_digits=10, decimal_places=2)
 
     class Meta:
         model = Subscription
-        fields = ['service_name', 'category_name', 'price', 'cashback', 'start_date']
+        fields = ['service_name', 'category_name', 'price', 'start_date']
 
 
 
 class CashbackSerializer(serializers.ModelSerializer):
-    service_name = serializers.ReadOnlyField(source='service.name')
-    category = serializers.ReadOnlyField(source='service.category.name')
-    image = serializers.ImageField(source='service.image')
-    price = serializers.DecimalField(source='terms.price', max_digits=10, decimal_places=2)
-    cashback = serializers.DecimalField(source='terms.cashback', max_digits=10, decimal_places=2)
-    month_today = serializers.SerializerMethodField()
-    day_of_payment = serializers.SerializerMethodField()
-    cashback = serializers.SerializerMethodField()
-    pay_this_month = serializers.SerializerMethodField()
-
+    cashback_amount = serializers.SerializerMethodField()
+    service_name = serializers.CharField(source='service.name')
+    category_name = serializers.CharField(source='service.category.name')
 
     class Meta:
         model = Subscription
-        fields = ['service_name', 'category', 'image', 'price', 'cashback', 'day_of_payment', 'month_today', 'cashback']
+        fields = ['service_name', 'category_name', 'cashback_amount']
 
-    def get_month_today(self, obj):
-        months = {
-            1: 'январь', 2: 'февраль', 3: 'март', 4: 'апрель', 5: 'май',
-            6: 'июнь', 7: 'июль', 8: 'август', 9: 'сентябрь', 10: 'октябрь',
-            11: 'ноябрь', 12: 'декабрь',
-        }
-        month_today = timezone.now().month
-
-        return months[month_today]
-
-
-    def get_day_of_payment(self, obj):
-        month_today = timezone.now().month
-        end_day = obj.end_date
-
-        return f'{end_day.day}.{month_today}.{end_day.year}'
-
-    def get_cashback(self, obj):
-        return int(obj.terms.price / 100 * obj.terms.cashback)
-
-
-
+    def get_cashback_amount(self, obj):
+        return obj.terms.price * (obj.terms.cashback / 100)
 
 
 class UserSubscribeSerializer(serializers.ModelSerializer):
@@ -217,74 +191,49 @@ class BestOfferSerializer(serializers.ModelSerializer):
         serializer = TermsPriceCashbackSerializer(terms, many=True)
         return serializer.data
 
-class SubscriptionForMaimPageSerializer(serializers.ModelSerializer):
-    service = serializers.ReadOnlyField(source='service.name')
-    price = serializers.ReadOnlyField(source='terms.price')
-    cashback = serializers.ReadOnlyField(source='terms.cashback')
-    image = serializers.ImageField(source='service.image')
+
+class SubscriptionSerializer(serializers.ModelSerializer):
+    bank_card_details = BankCardSerializer(source='bank_card', read_only=True)
+    terms_details = TermDetailSerializer(source='terms', read_only=True)
 
     class Meta:
         model = Subscription
-        fields = ['id', 'service', 'image', 'price', 'cashback']
+        fields = ['start_date', 'end_date', 'bank_card_details', 'terms_details']
+
+
+class MainSubscriptionSerializer(serializers.ModelSerializer):
+    service_name = serializers.CharField(source='service.name')
+    service_image = serializers.ImageField(source='service.image')
+    terms_price = serializers.IntegerField(source='terms.price')
+
+    class Meta:
+        model = Subscription
+        fields = ('service_name', 'service_image', 'terms_price')
 
 
 class MainPageSerializer(serializers.ModelSerializer):
     best_offer = serializers.SerializerMethodField()
-    subscription = serializers.SerializerMethodField()
+    subscription = MainSubscriptionSerializer(many=True, source='subscriptions', read_only=True)
+    total_cashback = serializers.SerializerMethodField()
+    total_expenses = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ['id' , 'best_offer', 'subscription']
+        fields = ['id' , 'best_offer', 'subscription', 'total_cashback', 'total_expenses']
 
     def get_best_offer(self, obj):
-        best_offer = Service.objects.filter(is_featured=True)[:SUBSCRIBE_LIMIT]
-        if best_offer:
-            serializer = BestOfferSerializer(
-                best_offer,
-                many=True,
-            )
-            return serializer.data
+        featured_services = Service.objects.filter(is_featured=True)
+        serializer = ServiceSerializer(featured_services, many=True, context={'request': self.context.get('request')})
+        return serializer.data
 
-        return []
-    
-    def get_subscription(self, obj):
-        subscription = obj.subscriptions.all()[:SUBSCRIBE_LIMIT]
-        if subscription:
-            serializer = SubscriptionForMaimPageSerializer(
-                subscription,
-                many=True,
-            )
-            return serializer.data
+    def get_total_cashback(self, obj):
+        queryset = obj.subscriptions.all()
+        return sum(sub.terms.price * (sub.terms.cashback / 100) for sub in queryset)
 
-        return []
+    def get_total_expenses(self, obj):
+        queryset = obj.subscriptions.all()
+        return queryset.aggregate(Sum('terms__price'))['terms__price__sum'] or 0
 
-class CatalogSerializer(CategorySerializer):
-    """Подписка"""
-
-    services = serializers.SerializerMethodField()
-
-
-    class Meta:
-        model = Category
-        fields = (
-            'name',
-            'services',
-        )
-
-    def get_services(self, obj):
-        """Получение списка рецептов автора"""
-
-        categorys_services = obj.services.all()[:SUBSCRIBE_LIMIT]
-
-        if categorys_services:
-            serializer = AdditionalForServiceSerializer(
-                categorys_services,
-                context={'request': self.context['request']},
-                many=True,
-            )
-            return serializer.data
-
-        return []
 
 
 class ServiceTermsForCatalogSerializer(serializers.ModelSerializer):
