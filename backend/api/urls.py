@@ -13,7 +13,6 @@ router.register(r'user', CustomUserViewSet, basename='users')
 app_name = 'api'
 
 urlpatterns = [
-    # path('expenses/', ExpensesView.as_view(), name='user-expenses'),
     path('main/', MainPageAPIView.as_view(), name='main'),
     path('comparison/', ComparisonAPIView.as_view(), name='main'),
     path('cards/', BankCardView.as_view(), name='cards-list-and-activate'),

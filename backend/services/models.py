@@ -188,7 +188,7 @@ class Subscription(models.Model):
         verbose_name='Дата начала подписки'
     )
     end_date = models.DateTimeField(
-        blank=True,
+        blank=True, null=True,
         verbose_name='Дата окончания подписки'
     )
     bank_card = models.ForeignKey(

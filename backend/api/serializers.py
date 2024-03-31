@@ -94,44 +94,14 @@ class BankCardSerializer(serializers.ModelSerializer):
         fields = ['id', 'card_number', 'is_active', 'balance']
 
 
-class SubscriptionSerializer(serializers.ModelSerializer): # при обновление подписки даты просуммировать
+class CreateSubscriptionSerializer(serializers.ModelSerializer): # при обновление подписки даты просуммировать
     bank_card_details = BankCardSerializer(source='bank_card', read_only=True)
     terms_details = TermDetailSerializer(source='terms', read_only=True)
-
+    
     class Meta:
         model = Subscription
         fields = ['start_date', 'end_date', 'bank_card_details', 'terms_details']
         extra_kwargs = {'end_date': {'required': False}}
-
-    def create(self, validated_data):
-        user = validated_data.get('user')
-        terms_id = validated_data.get('terms')
-        print(f"Trying to get Terms with ID: {terms_id}")
-        terms = Terms.objects.get(id=terms_id)
-
-        bank_card = BankCard.objects.filter(user=user, is_active=True).first()
-        if not bank_card:
-            raise serializers.ValidationError("У пользователя нет активированной банковской карты для привязки к подписке.")
-
-        if bank_card.balance < terms.price:
-            raise serializers.ValidationError("На активированной банковской карте недостаточно средств для оформления подписки.")
-
-        with transaction.atomic():
-            bank_card.balance -= terms.price
-            bank_card.save()
-
-            duration_mapping = {
-                "one_month": 30,
-                "three_months": 90,
-                "six_months": 180,
-                "one_year": 365,
-            }
-            duration_days = duration_mapping.get(terms.duration, 30)
-            validated_data['end_date'] = validated_data.get('start_date', timezone.now()) + timedelta(days=duration_days)
-
-            subscription = Subscription.objects.create(**validated_data, bank_card=bank_card)
-
-        return subscription
 
 
 class ExpenseSerializer(serializers.ModelSerializer):
@@ -143,6 +113,15 @@ class ExpenseSerializer(serializers.ModelSerializer):
         model = Subscription
         fields = ['service_name', 'category_name', 'price', 'start_date']
 
+
+class PaidSerializer(serializers.ModelSerializer):
+    service_name = serializers.CharField(source='service.name')
+    category_name = serializers.CharField(source='service.category.name')
+    price = serializers.DecimalField(source='terms.price', max_digits=10, decimal_places=2)
+
+    class Meta:
+        model = Subscription
+        fields = ['service_name', 'category_name', 'price', 'end_date']
 
 
 class CashbackSerializer(serializers.ModelSerializer):
@@ -216,10 +195,11 @@ class MainPageSerializer(serializers.ModelSerializer):
     subscription = MainSubscriptionSerializer(many=True, source='subscriptions', read_only=True)
     total_cashback = serializers.SerializerMethodField()
     total_expenses = serializers.SerializerMethodField()
+    total_paids = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ['id' , 'best_offer', 'subscription', 'total_cashback', 'total_expenses']
+        fields = ['id' , 'best_offer', 'subscription', 'total_cashback', 'total_expenses', 'total_paids']
 
     def get_best_offer(self, obj):
         featured_services = Service.objects.filter(is_featured=True)
@@ -234,6 +214,9 @@ class MainPageSerializer(serializers.ModelSerializer):
         queryset = obj.subscriptions.all()
         return queryset.aggregate(Sum('terms__price'))['terms__price__sum'] or 0
 
+    def get_total_paids(self, obj):
+        queryset = obj.subscriptions.all()
+        return queryset.aggregate(Sum('terms__price'))['terms__price__sum'] or 0
 
 
 class ServiceTermsForCatalogSerializer(serializers.ModelSerializer):
@@ -269,8 +252,6 @@ class ComparisonSerializer(serializers.ModelSerializer):
                 many=True,
             )
         return serializer.data
-
-
 
 
 class AdditionalForServiceSerializer(serializers.ModelSerializer):
