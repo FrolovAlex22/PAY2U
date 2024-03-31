@@ -1,7 +1,7 @@
 import datetime
 from django.db.models import Q, Sum
 
-from .filters import ServiceFilter, SubscriptionFilter
+from .filters import ServiceFilter
 from rest_framework import viewsets, status
 from rest_framework.views import APIView
 from .serializers import (
@@ -9,6 +9,7 @@ from .serializers import (
     ComparisonSerializer,
     ExpenseSerializer,
     MainPageSerializer,
+    PaidSerializer,
     ServiceWithTermsSerializer,
     UserSerializer,
     ServiceSerializer,
@@ -16,7 +17,8 @@ from .serializers import (
     SubscriptionSerializer,
     CashbackSerializer,
     CategorySerializer,
-    UserSubscribeSerializer
+    UserSubscribeSerializer,
+    CreateSubscriptionSerializer
 )
 from services.models import BankCard, Category, Comparison, Service, Subscription, Terms
 from rest_framework.response import Response
@@ -31,7 +33,8 @@ from rest_framework.permissions import (
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter, SearchFilter
-
+from rest_framework import mixins, viewsets
+from .utils import handle_subscribe_delete, handle_subscribe_post
 
 class MainPageAPIView(APIView):
 
@@ -153,19 +156,31 @@ class CustomUserViewSet(UserViewSet):
     def paids(self, request):
         """К оплате в этом месяце пользователя"""
         user = self.request.user
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+        category = request.query_params.get('category')
+        filters = Q(user=user)
+        if category:
+            filters &= Q(service__category__name=category)
+
+        if start_date:
+            start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d').date()
+            filters &= Q(end_date__date__gte=start_date)
         
-        queryset = user.subscriptions.all()
-        if not queryset:
-            return Response(
-                {'errors': 'Чтобы увидеть сколько нужно оплатить, нужно'
-                 'подписаться хотябы на 1 сервис!'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        pages = self.paginate_queryset(queryset)
-        serializer = CashbackSerializer(
-            pages, many=True, context={'request': request}
-        )
-        return self.get_paginated_response(serializer.data)
+        if end_date:
+            end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d').date()
+            filters &= Q(end_date__date__lte=end_date)
+
+        queryset = Subscription.objects.filter(filters)
+        
+        if not queryset.exists():
+            return Response({'errors': 'По заданным параметрам подписок не найдено.'}, status=status.HTTP_404_NOT_FOUND)
+        
+        total_paids = queryset.aggregate(Sum('terms__price'))['terms__price__sum'] or 0
+        serializer = PaidSerializer(queryset, many=True, context={'request': request})
+        data = serializer.data
+        data.append({'total_paids': total_paids})
+        return Response(data)
 
 
     @action(detail=False,
@@ -218,6 +233,22 @@ class ServiceViewSet(viewsets.ReadOnlyModelViewSet):
         serializer = TermDetailSerializer(term)
         return Response(serializer.data)
 
+    @action(detail=True, methods=['post', 'delete'], url_path='terms/(?P<terms_id>\d+)/subscribe')
+    def subscribe(self, request, pk=None, terms_id=None):
+        user = request.user
+        service = get_object_or_404(Service, pk=pk)
+        terms = get_object_or_404(Terms, pk=terms_id, service=service)
+        bank_card = BankCard.objects.filter(user=user).first()
+
+        if not bank_card:
+            return Response({'errors': 'У пользователя нет банковской карты для привязки к подписке.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if request.method == 'POST':
+            return handle_subscribe_post(request, user, service, terms, bank_card)
+
+        elif request.method == 'DELETE':
+            return handle_subscribe_delete(user, service, terms)
+
 
     @action(
         detail=True,
@@ -253,18 +284,17 @@ class ServiceViewSet(viewsets.ReadOnlyModelViewSet):
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
-class SubscriptionViewSet(viewsets.ModelViewSet):
-    queryset = Subscription.objects.all()
-    serializer_class = SubscriptionSerializer
-    filter_backends = [DjangoFilterBackend]
-    filterset_class = SubscriptionFilter
+class SubscriptionViewSet(mixins.CreateModelMixin,
+                   mixins.UpdateModelMixin,
+                   mixins.DestroyModelMixin,
+                   viewsets.GenericViewSet):
 
-    def get_queryset(self):
-        return self.queryset.filter(user=self.request.user)
+    queryset = Subscription.objects.all()
+    serializer_class = CreateSubscriptionSerializer
+
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
-
 
 class BankCardView(APIView):
 
