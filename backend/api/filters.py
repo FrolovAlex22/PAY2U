@@ -10,10 +10,20 @@ class ServiceFilter(django_filters.FilterSet):
         model = Service
         fields = ['category', 'is_featured']
 
+
 class SubscriptionFilter(django_filters.FilterSet):
-    start_date = django_filters.DateFilter(field_name="start_date", lookup_expr='gte')
-    end_date = django_filters.DateFilter(field_name="start_date", lookup_expr='lte')
-    category = django_filters.NumberFilter(field_name="service__category", lookup_expr='exact')
+    start_date = django_filters.DateFilter(
+        field_name="start_date",
+        lookup_expr='gte'
+    )
+    end_date = django_filters.DateFilter(
+        field_name="start_date",
+        lookup_expr='lte'
+    )
+    category = django_filters.NumberFilter(
+        field_name="service__category",
+        lookup_expr='exact'
+    )
 
     class Meta:
         model = Subscription

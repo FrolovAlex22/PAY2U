@@ -1,13 +1,23 @@
 from django.urls import include, path
 from rest_framework import routers
 
-from .views import BankCardView, CategoryViewSet, CustomUserViewSet, ServiceViewSet, SubscriptionViewSet, MainPageAPIView, ComparisonAPIView
+from .views import (
+    BankCardView,
+    CategoryViewSet,
+    CustomUserViewSet,
+    ServiceViewSet,
+    SubscriptionViewSet,
+    MainPageAPIView,
+    ComparisonAPIView
+)
 
 
 router = routers.DefaultRouter()
 router.register(r'services', ServiceViewSet, basename='services')
 router.register(r'categories', CategoryViewSet, basename='categories')
-router.register(r'subscriptions', SubscriptionViewSet, basename='subscriptions')
+router.register(
+    r'subscriptions', SubscriptionViewSet, basename='subscriptions'
+)
 router.register(r'user', CustomUserViewSet, basename='users')
 
 app_name = 'api'

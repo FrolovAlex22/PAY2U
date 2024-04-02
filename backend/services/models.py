@@ -35,12 +35,14 @@ class Category(models.Model):
 
         return self.name
 
+
 class ServiceManager(models.Manager):
     def get_queryset(self):
         return super().get_queryset().annotate(
             min_price=Min('subscription_terms__price'),
             max_cashback=Max('subscription_terms__cashback')
         )
+
 
 class Service(models.Model):
     """Модель для описания сервиса"""
@@ -71,7 +73,10 @@ class Service(models.Model):
     text = models.TextField(
         verbose_name='Описание сервиса'
     )
-    is_featured = models.BooleanField(default=False, verbose_name='Лучшее предложение')
+    is_featured = models.BooleanField(
+        default=False,
+        verbose_name='Лучшее предложение'
+    )
     objects = ServiceManager()
 
     class Meta:
@@ -141,7 +146,7 @@ class Terms(models.Model):
 
 class BankCard(models.Model):
     """Модель банковской карты для демонстрационных целей."""
-    card_number = models.CharField(max_length=19, verbose_name='Номер карты')  # 16 цифр + 3 пробела для форматирования
+    card_number = models.CharField(max_length=19, verbose_name='Номер карты')
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -152,14 +157,19 @@ class BankCard(models.Model):
         default=5000,
         verbose_name='Баланс'
     )
-    is_active = models.BooleanField(default=False, verbose_name='Активная карта')
+    is_active = models.BooleanField(
+        default=False,
+        verbose_name='Активная карта'
+    )
 
     class Meta:
         verbose_name = 'Банковская карта'
         verbose_name_plural = 'Банковские карты'
 
     def __str__(self):
-        return f'Карта {self.card_number[-4:]} пользователя {self.user.username}'
+        return (
+            f'Карта {self.card_number[-4:]} пользователя {self.user.username}'
+        )
 
 
 class Subscription(models.Model):

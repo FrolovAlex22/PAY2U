@@ -1,5 +1,4 @@
 from datetime import timedelta
-import os
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -23,8 +22,6 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['localhost']
 
-
-
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -41,7 +38,7 @@ INSTALLED_APPS = [
     'services.apps.ServicesConfig',
     'api.apps.ApiConfig',
     'users.apps.UsersConfig',
-    
+
 ]
 
 MIDDLEWARE = [
@@ -149,15 +146,6 @@ CSV_FILES_DIR = '../data'
 DJOSER = {
     'LOGIN_FIELD': 'email',
     'HIDE_USERS': False,
-    # 'SERIALIZERS': {
-    #     'user_create': 'api.serializers.CustomUserCreateSerializer',
-    #     'user': 'api.serializers.UserGETSerializer',
-    #     'current_user': 'api.serializers.UserGETSerializer',
-    # },
-    # 'PERMISSIONS': {
-    #     'user': ['djoser.permissions.CurrentUserOrAdminOrReadOnly'],
-    #     'user_list': ['rest_framework.permissions.AllowAny'],
-    # }
 }
 
 SIMPLE_JWT = {

@@ -1,12 +1,15 @@
-from django.utils import timezone
-from django.db import transaction
-from datetime import timedelta
-from PAY2U.settings import SUBSCRIBE_LIMIT
 from djoser.serializers import UserSerializer
 from rest_framework import serializers
 
 from users.models import User
-from services.models import BankCard, Category, Comparison, Service, Subscription, Terms
+from services.models import (
+    BankCard,
+    Category,
+    Comparison,
+    Service,
+    Subscription,
+    Terms
+)
 from django.db.models import Sum
 
 
@@ -15,14 +18,9 @@ class UserSerializer(UserSerializer):
 
     class Meta:
         model = User
-        fields = (
-            'id',
-            'email',
-            'first_name',
-            'last_name',
-            'phone_number'
-        )
-
+        fields = [
+            'id', 'email', 'first_name', 'last_name', 'phone_number'
+        ]
 
 
 class CustomUserCreateSerializer(UserSerializer):
@@ -43,7 +41,7 @@ class CategorySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Category
-        fields = ('id', 'name')
+        fields = ['id', 'name']
 
 
 class ServiceSerializer(serializers.ModelSerializer):
@@ -53,7 +51,10 @@ class ServiceSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Service
-        fields = ('name', 'image', 'text', 'category', 'min_price', 'max_cashback', 'is_featured')
+        fields = [
+            'name', 'image', 'text', 'category', 'min_price', 'max_cashback',
+            'is_featured'
+        ]
 
     def get_min_price(self, obj):
         min_price = obj.min_price
@@ -68,7 +69,7 @@ class TermsSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Terms
-        fields = ('id', 'name', 'price', 'duration', 'cashback')
+        fields = ['id', 'name', 'price', 'duration', 'cashback']
 
 
 class ServiceWithTermsSerializer(serializers.ModelSerializer):
@@ -76,16 +77,26 @@ class ServiceWithTermsSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Service
-        fields = ('id', 'name', 'image', 'text', 'subscription_terms')
+        fields = ['id', 'name', 'image', 'text', 'subscription_terms']
 
 
 class TermDetailSerializer(serializers.ModelSerializer):
     service_name = serializers.CharField(source='service.name', read_only=True)
-    service_image = serializers.ImageField(source='service.image', read_only=True)
-    service_category = serializers.CharField(source='service.category', read_only=True)
+    service_image = serializers.ImageField(
+        source='service.image',
+        read_only=True
+    )
+    service_category = serializers.CharField(
+        source='service.category',
+        read_only=True
+    )
+
     class Meta:
         model = Terms
-        fields = ('id', 'name', 'subscription_type', 'duration', 'cashback', 'price', 'service_name', 'service_image', 'service_category')
+        fields = [
+            'id', 'name', 'subscription_type', 'duration', 'cashback', 'price',
+            'service_name', 'service_image', 'service_category'
+        ]
 
 
 class BankCardSerializer(serializers.ModelSerializer):
@@ -94,20 +105,26 @@ class BankCardSerializer(serializers.ModelSerializer):
         fields = ['id', 'card_number', 'is_active', 'balance']
 
 
-class CreateSubscriptionSerializer(serializers.ModelSerializer): # при обновление подписки даты просуммировать
+class CreateSubscriptionSerializer(serializers.ModelSerializer):
     bank_card_details = BankCardSerializer(source='bank_card', read_only=True)
     terms_details = TermDetailSerializer(source='terms', read_only=True)
-    
+
     class Meta:
         model = Subscription
-        fields = ['start_date', 'end_date', 'bank_card_details', 'terms_details']
+        fields = [
+            'start_date', 'end_date', 'bank_card_details', 'terms_details'
+        ]
         extra_kwargs = {'end_date': {'required': False}}
 
 
 class ExpenseSerializer(serializers.ModelSerializer):
     service_name = serializers.CharField(source='service.name')
     category_name = serializers.CharField(source='service.category.name')
-    price = serializers.DecimalField(source='terms.price', max_digits=10, decimal_places=2)
+    price = serializers.DecimalField(
+        source='terms.price',
+        max_digits=10,
+        decimal_places=2
+    )
 
     class Meta:
         model = Subscription
@@ -117,7 +134,11 @@ class ExpenseSerializer(serializers.ModelSerializer):
 class PaidSerializer(serializers.ModelSerializer):
     service_name = serializers.CharField(source='service.name')
     category_name = serializers.CharField(source='service.category.name')
-    price = serializers.DecimalField(source='terms.price', max_digits=10, decimal_places=2)
+    price = serializers.DecimalField(
+        source='terms.price',
+        max_digits=10,
+        decimal_places=2
+    )
 
     class Meta:
         model = Subscription
@@ -148,7 +169,10 @@ class UserSubscribeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Subscription
-        fields = ['id', 'service', 'category', 'image', 'price', 'cashback', 'end_date', 'bank_card']
+        fields = [
+            'id', 'service', 'category', 'image', 'price',
+            'cashback', 'end_date', 'bank_card'
+        ]
 
 
 class TermsPriceCashbackSerializer(serializers.ModelSerializer):
@@ -177,7 +201,9 @@ class SubscriptionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Subscription
-        fields = ['start_date', 'end_date', 'bank_card_details', 'terms_details']
+        fields = [
+            'start_date', 'end_date', 'bank_card_details', 'terms_details'
+        ]
 
 
 class MainSubscriptionSerializer(serializers.ModelSerializer):
@@ -192,31 +218,48 @@ class MainSubscriptionSerializer(serializers.ModelSerializer):
 
 class MainPageSerializer(serializers.ModelSerializer):
     best_offer = serializers.SerializerMethodField()
-    subscription = MainSubscriptionSerializer(many=True, source='subscriptions', read_only=True)
+    subscription = MainSubscriptionSerializer(
+        many=True,
+        source='subscriptions',
+        read_only=True
+    )
     total_cashback = serializers.SerializerMethodField()
     total_expenses = serializers.SerializerMethodField()
     total_paids = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ['id' , 'best_offer', 'subscription', 'total_cashback', 'total_expenses', 'total_paids']
+        fields = [
+            'id', 'best_offer', 'subscription', 'total_cashback',
+            'total_expenses', 'total_paids'
+        ]
 
     def get_best_offer(self, obj):
         featured_services = Service.objects.filter(is_featured=True)
-        serializer = ServiceSerializer(featured_services, many=True, context={'request': self.context.get('request')})
+        serializer = ServiceSerializer(
+            featured_services,
+            many=True,
+            context={'request': self.context.get('request')}
+        )
         return serializer.data
 
     def get_total_cashback(self, obj):
         queryset = obj.subscriptions.all()
-        return sum(sub.terms.price * (sub.terms.cashback / 100) for sub in queryset)
+        return sum(
+            sub.terms.price * (sub.terms.cashback / 100) for sub in queryset
+        )
 
     def get_total_expenses(self, obj):
         queryset = obj.subscriptions.all()
-        return queryset.aggregate(Sum('terms__price'))['terms__price__sum'] or 0
+        return (
+            queryset.aggregate(Sum('terms__price'))['terms__price__sum'] or 0
+        )
 
     def get_total_paids(self, obj):
         queryset = obj.subscriptions.all()
-        return queryset.aggregate(Sum('terms__price'))['terms__price__sum'] or 0
+        return (
+            queryset.aggregate(Sum('terms__price'))['terms__price__sum'] or 0
+        )
 
 
 class ServiceTermsForCatalogSerializer(serializers.ModelSerializer):
@@ -263,7 +306,7 @@ class AdditionalForServiceSerializer(serializers.ModelSerializer):
 
         model = Service
         fields = ('id', 'name', 'image', 'service_terms')
-    
+
     def get_service_terms(self, obj):
         """Получение списка рецептов автора"""
 
