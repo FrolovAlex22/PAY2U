@@ -1,24 +1,37 @@
 import datetime
+
 from django.db.models import Q, Sum
+from django.shortcuts import get_object_or_404
+from django_filters.rest_framework import DjangoFilterBackend
+from djoser.views import UserViewSet
+from rest_framework import viewsets, status, mixins
+from rest_framework.decorators import action
+from rest_framework.filters import OrderingFilter, SearchFilter
+from rest_framework.pagination import PageNumberPagination
+from rest_framework.permissions import (
+    AllowAny,
+    IsAuthenticated
+)
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from .filters import ServiceFilter
-from rest_framework import viewsets, status, mixins
-from rest_framework.views import APIView
 from .serializers import (
     BankCardSerializer,
+    CashbackSerializer,
+    CategorySerializer,
     ComparisonSerializer,
+    CreateSubscriptionSerializer,
     ExpenseSerializer,
     MainPageSerializer,
     PaidSerializer,
     ServiceWithTermsSerializer,
-    UserSerializer,
     ServiceSerializer,
     TermDetailSerializer,
-    CashbackSerializer,
-    CategorySerializer,
+    UserSerializer,
     UserSubscribeSerializer,
-    CreateSubscriptionSerializer
 )
+from .utils import handle_subscribe_delete, handle_subscribe_post
 from services.models import (
     BankCard,
     Category,
@@ -27,19 +40,7 @@ from services.models import (
     Subscription,
     Terms
 )
-from rest_framework.response import Response
-from django.shortcuts import get_object_or_404
-from django_filters.rest_framework import DjangoFilterBackend
-from djoser.views import UserViewSet
 from users.models import User
-from rest_framework.permissions import (
-    AllowAny,
-    IsAuthenticated
-)
-from rest_framework.pagination import PageNumberPagination
-from rest_framework.decorators import action
-from rest_framework.filters import OrderingFilter, SearchFilter
-from .utils import handle_subscribe_delete, handle_subscribe_post
 
 
 class MainPageAPIView(APIView):

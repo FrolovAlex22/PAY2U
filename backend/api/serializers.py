@@ -1,7 +1,7 @@
+from django.db.models import Sum
 from djoser.serializers import UserSerializer
 from rest_framework import serializers
 
-from users.models import User
 from services.models import (
     BankCard,
     Category,
@@ -10,7 +10,7 @@ from services.models import (
     Subscription,
     Terms
 )
-from django.db.models import Sum
+from users.models import User
 
 
 class UserSerializer(UserSerializer):

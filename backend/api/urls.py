@@ -5,10 +5,10 @@ from .views import (
     BankCardView,
     CategoryViewSet,
     CustomUserViewSet,
+    ComparisonAPIView,
+    MainPageAPIView,
     ServiceViewSet,
     SubscriptionViewSet,
-    MainPageAPIView,
-    ComparisonAPIView
 )
 
 

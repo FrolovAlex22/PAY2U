@@ -1,13 +1,14 @@
 import datetime
+
 from django.db import transaction
 from django.utils import timezone
-
 from rest_framework import status
+from rest_framework.response import Response
+
 from .serializers import (
     SubscriptionSerializer,
 )
 from services.models import Subscription
-from rest_framework.response import Response
 
 
 def handle_subscribe_post(request, user, service, terms, bank_card):
