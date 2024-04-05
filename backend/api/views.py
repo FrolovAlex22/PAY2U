@@ -73,7 +73,7 @@ class CustomUserViewSet(UserViewSet):
 
     @action(
         detail=False,
-        methods=('get',),
+        methods=['get',],
         permission_classes=(IsAuthenticated,),
     )
     def subscriptions(self, request):
@@ -133,7 +133,7 @@ class CustomUserViewSet(UserViewSet):
 
     @action(
         detail=False,
-        methods=('get',),
+        methods=['get',],
     )
     def expenses(self, request):
         """Расходы пользователя с возможностью фильтрации по датам"""
@@ -177,7 +177,7 @@ class CustomUserViewSet(UserViewSet):
 
     @action(
         detail=False,
-        methods=('get',),
+        methods=['get',],
     )
     def paids(self, request):
         """К оплате в этом месяце пользователя"""
@@ -274,8 +274,8 @@ class ServiceViewSet(viewsets.ReadOnlyModelViewSet):
             url_path='terms/(?P<term_pk>[^/.]+)'
         )
     def term_detail(self, request, pk=None, term_pk=None):
-        service = self.get_object()
-        term = get_object_or_404(Terms, pk=term_pk, service=service)
+        service = get_object_or_404(Service, pk=pk)
+        term = get_object_or_404(Terms, pk=term_pk, service=service.id)
         serializer = TermDetailSerializer(term)
         return Response(serializer.data)
 
@@ -313,7 +313,8 @@ class ServiceViewSet(viewsets.ReadOnlyModelViewSet):
 
     @action(
         detail=True,
-        methods=('post', 'delete'),)
+        methods=['post', 'delete',]
+    )
     def add_comparison(self, request, pk=None):
         user = self.request.user
         service = get_object_or_404(Service, id=pk)

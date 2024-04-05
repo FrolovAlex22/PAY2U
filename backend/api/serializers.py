@@ -275,26 +275,26 @@ class ServiceTermsForCatalogSerializer(serializers.ModelSerializer):
 class ComparisonSerializer(serializers.ModelSerializer):
     """Сериализатор для отображения сравнений"""
     name = serializers.ReadOnlyField(source='service.name')
-    service_terms = serializers.SerializerMethodField()
     image = serializers.ImageField(source='service.image')
+    min_price = serializers.SerializerMethodField()
+    max_cashback = serializers.SerializerMethodField()
 
     class Meta:
         """Мета-параметры сериализатора"""
 
         model = Comparison
-        fields = ('id', 'name', 'image', 'service_terms')
+        fields = ('id', 'name', 'image', 'min_price', 'max_cashback')
 
-    def get_service_terms(self, obj):
-        """Получение списка рецептов автора"""
+    def get_min_price(self, obj):
 
-        comparison_services = Terms.objects.filter(id=obj.service.id)
+        service = Service.objects.get(id=obj.service.id)
+        min_price = service.min_price
+        return min_price if min_price is not None else 0
 
-        serializer = ServiceTermsForCatalogSerializer(
-                comparison_services,
-                context={'request': self.context['request']},
-                many=True,
-            )
-        return serializer.data
+    def get_max_cashback(self, obj):
+        service = Service.objects.get(id=obj.service.id)
+        max_cashback = service.max_cashback
+        return max_cashback if max_cashback is not None else 0
 
 
 class AdditionalForServiceSerializer(serializers.ModelSerializer):
