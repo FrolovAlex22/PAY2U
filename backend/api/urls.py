@@ -1,4 +1,5 @@
 from django.urls import include, path
+from django.views.generic import TemplateView
 from rest_framework import routers
 
 from .views import (
@@ -27,5 +28,12 @@ urlpatterns = [
     path('comparison/', ComparisonAPIView.as_view(), name='main'),
     path('cards/', BankCardView.as_view(), name='cards-list-and-activate'),
     path('', include(router.urls)),
-    path('auth/', include('djoser.urls.jwt')),
+    path('auth/', include('djoser.urls.jwt'))
+]
+
+urlpatterns += [
+    path('redoc/', TemplateView.as_view(
+        template_name='redoc.html',
+        extra_context={'schema_url': 'openapi-schema'}
+    ), name='redoc'),
 ]
