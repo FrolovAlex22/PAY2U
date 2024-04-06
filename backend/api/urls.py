@@ -1,4 +1,5 @@
 from django.urls import include, path
+from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView
 from rest_framework import routers
 
 from .views import (
@@ -28,4 +29,6 @@ urlpatterns = [
     path('cards/', BankCardView.as_view(), name='cards-list-and-activate'),
     path('', include(router.urls)),
     path('auth/', include('djoser.urls.jwt')),
+    path('schema/', SpectacularAPIView.as_view(), name='schema'),
+    path('schema/redoc/',SpectacularRedocView.as_view(url_name='api:schema'),name='redoc'),
 ]
