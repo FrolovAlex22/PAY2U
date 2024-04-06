@@ -40,9 +40,27 @@ class CustomUserCreateSerializer(UserSerializer):
 
 class CategorySerializer(serializers.ModelSerializer):
     """Сериализатор категорий"""
+    services = serializers.SerializerMethodField()
+
+
     class Meta:
         model = Category
-        fields = ['id', 'name']
+        fields = ['id', 'name', 'services']
+
+    def get_services(self, obj):
+        """Получение списка сервисов категории"""
+
+        categorys_services = obj.services.all()[:SUBSCRIBE_LIMIT]
+
+        if categorys_services:
+            serializer = AdditionalForServiceSerializer(
+                categorys_services,
+                context={'request': self.context['request']},
+                many=True,
+            )
+            return serializer.data
+
+        return []
 
 
 class ServiceSerializer(serializers.ModelSerializer):
