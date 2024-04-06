@@ -1,0 +1,1850 @@
+openapi: 3.0.3
+info:
+  title: PAY2U API
+  version: 1.0.0
+  description: This documentation for PAY2U
+paths:
+  /api/auth/jwt/create/:
+    post:
+      operationId: auth_jwt_create_create
+      description: |-
+        Takes a set of user credentials and returns an access and refresh JSON web
+        token pair to prove the authentication of those credentials.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenObtainPair'
+          description: ''
+  /api/auth/jwt/refresh/:
+    post:
+      operationId: auth_jwt_refresh_create
+      description: |-
+        Takes a refresh type JSON web token and returns an access type JSON web
+        token if the refresh token is valid.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+  /api/auth/jwt/verify/:
+    post:
+      operationId: auth_jwt_verify_create
+      description: |-
+        Takes a token and indicates if it is valid.  This view provides no
+        information about a token's fitness for a particular use.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenVerify'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenVerify'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenVerify'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenVerify'
+          description: ''
+  /api/cards/:
+    get:
+      operationId: cards_list
+      description: Получение списка банковских карт пользователя
+      tags:
+      - cards
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BankCard'
+          description: ''
+    patch:
+      operationId: cards_partial_update
+      description: Активация банковской карты пользователя по card_id
+      tags:
+      - cards
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedBankCard'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedBankCard'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedBankCard'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: Карта активирована
+        '400':
+          description: Необходимо указать card_id
+        '404':
+          description: Карта не найдена
+  /api/categories/:
+    get:
+      operationId: categories_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - categories
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCategoryList'
+          description: ''
+  /api/categories/{id}/:
+    get:
+      operationId: categories_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Категория.
+        required: true
+      tags:
+      - categories
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+          description: ''
+  /api/categories/catalog/:
+    get:
+      operationId: categories_catalog_retrieve
+      description: Каталог пользователя разбитый на категории
+      tags:
+      - categories
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+          description: ''
+  /api/comparison/:
+    get:
+      operationId: comparison_list
+      description: Получение списка сравнений пользователя
+      tags:
+      - comparison
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Comparison'
+          description: ''
+  /api/main/:
+    get:
+      operationId: main_retrieve
+      tags:
+      - main
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MainPage'
+          description: ''
+  /api/services/:
+    get:
+      operationId: services_list
+      parameters:
+      - in: query
+        name: category
+        schema:
+          type: integer
+      - in: query
+        name: is_featured
+        schema:
+          type: boolean
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - services
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedServiceList'
+          description: ''
+  /api/services/{id}/:
+    get:
+      operationId: services_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Сервис.
+        required: true
+      tags:
+      - services
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceWithTerms'
+          description: ''
+  /api/services/{id}/add_comparison/:
+    post:
+      operationId: services_add_comparison_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Сервис.
+        required: true
+      tags:
+      - services
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Service'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Service'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Service'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Service'
+          description: ''
+    delete:
+      operationId: services_add_comparison_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Сервис.
+        required: true
+      tags:
+      - services
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/services/{id}/terms/{term_pk}/:
+    get:
+      operationId: services_terms_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Сервис.
+        required: true
+      - in: path
+        name: term_pk
+        schema:
+          type: string
+        required: true
+      tags:
+      - services
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Service'
+          description: ''
+  /api/services/{id}/terms/{terms_id}/subscribe/:
+    post:
+      operationId: services_terms_subscribe_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Сервис.
+        required: true
+      - in: path
+        name: terms_id
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - services
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Service'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Service'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Service'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Service'
+          description: ''
+    delete:
+      operationId: services_terms_subscribe_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Сервис.
+        required: true
+      - in: path
+        name: terms_id
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - services
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/services/bestoffer/:
+    get:
+      operationId: services_bestoffer_retrieve
+      tags:
+      - services
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Service'
+          description: ''
+  /api/subscriptions/:
+    post:
+      operationId: subscriptions_create
+      tags:
+      - subscriptions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSubscription'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CreateSubscription'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreateSubscription'
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateSubscription'
+          description: ''
+  /api/subscriptions/{id}/:
+    put:
+      operationId: subscriptions_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Подписка.
+        required: true
+      tags:
+      - subscriptions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSubscription'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CreateSubscription'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreateSubscription'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateSubscription'
+          description: ''
+    patch:
+      operationId: subscriptions_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Подписка.
+        required: true
+      tags:
+      - subscriptions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCreateSubscription'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCreateSubscription'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCreateSubscription'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateSubscription'
+          description: ''
+    delete:
+      operationId: subscriptions_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Подписка.
+        required: true
+      tags:
+      - subscriptions
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/user/:
+    get:
+      operationId: user_list
+      description: Вьюсет для работы с обьектами класса User
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - user
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUserList'
+          description: ''
+    post:
+      operationId: user_create
+      description: Вьюсет для работы с обьектами класса User
+      tags:
+      - user
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserCreate'
+          description: ''
+  /api/user/{id}/:
+    get:
+      operationId: user_retrieve
+      description: Вьюсет для работы с обьектами класса User
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Пользователь.
+        required: true
+      tags:
+      - user
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    put:
+      operationId: user_update
+      description: Вьюсет для работы с обьектами класса User
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Пользователь.
+        required: true
+      tags:
+      - user
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/User'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/User'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    patch:
+      operationId: user_partial_update
+      description: Вьюсет для работы с обьектами класса User
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Пользователь.
+        required: true
+      tags:
+      - user
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUser'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUser'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUser'
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    delete:
+      operationId: user_destroy
+      description: Вьюсет для работы с обьектами класса User
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Пользователь.
+        required: true
+      tags:
+      - user
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/user/activation/:
+    post:
+      operationId: user_activation_create
+      description: Вьюсет для работы с обьектами класса User
+      tags:
+      - user
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Activation'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Activation'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Activation'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Activation'
+          description: ''
+  /api/user/cashback/:
+    get:
+      operationId: user_cashback_list
+      description: Кэшбэк пользователя
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - user
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCashbackList'
+          description: ''
+  /api/user/expenses/:
+    get:
+      operationId: user_expenses_list
+      description: Расходы пользователя с возможностью фильтрации по датам
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - user
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedExpenseList'
+          description: ''
+  /api/user/paids/:
+    get:
+      operationId: user_paids_list
+      description: К оплате в этом месяце пользователя
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - user
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPaidList'
+          description: ''
+  /api/user/profile/:
+    get:
+      operationId: user_profile_retrieve
+      description: Вьюсет для работы с обьектами класса User
+      tags:
+      - user
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    patch:
+      operationId: user_profile_partial_update
+      description: Вьюсет для работы с обьектами класса User
+      tags:
+      - user
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUser'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUser'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUser'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /api/user/resend_activation/:
+    post:
+      operationId: user_resend_activation_create
+      description: Вьюсет для работы с обьектами класса User
+      tags:
+      - user
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendEmailReset'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SendEmailReset'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SendEmailReset'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendEmailReset'
+          description: ''
+  /api/user/reset_email/:
+    post:
+      operationId: user_reset_email_create
+      description: Вьюсет для работы с обьектами класса User
+      tags:
+      - user
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendEmailReset'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SendEmailReset'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SendEmailReset'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendEmailReset'
+          description: ''
+  /api/user/reset_email_confirm/:
+    post:
+      operationId: user_reset_email_confirm_create
+      description: Вьюсет для работы с обьектами класса User
+      tags:
+      - user
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UsernameResetConfirm'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UsernameResetConfirm'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UsernameResetConfirm'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsernameResetConfirm'
+          description: ''
+  /api/user/reset_password/:
+    post:
+      operationId: user_reset_password_create
+      description: Вьюсет для работы с обьектами класса User
+      tags:
+      - user
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendEmailReset'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SendEmailReset'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SendEmailReset'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendEmailReset'
+          description: ''
+  /api/user/reset_password_confirm/:
+    post:
+      operationId: user_reset_password_confirm_create
+      description: Вьюсет для работы с обьектами класса User
+      tags:
+      - user
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirm'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirm'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirm'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PasswordResetConfirm'
+          description: ''
+  /api/user/set_email/:
+    post:
+      operationId: user_set_email_create
+      description: Вьюсет для работы с обьектами класса User
+      tags:
+      - user
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetUsername'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SetUsername'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SetUsername'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SetUsername'
+          description: ''
+  /api/user/set_password/:
+    post:
+      operationId: user_set_password_create
+      description: Вьюсет для работы с обьектами класса User
+      tags:
+      - user
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetPassword'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SetPassword'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SetPassword'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SetPassword'
+          description: ''
+  /api/user/subscriptions/:
+    get:
+      operationId: user_subscriptions_list
+      description: Список подписок пользователя
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - user
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUserSubscribeList'
+          description: ''
+components:
+  schemas:
+    Activation:
+      type: object
+      properties:
+        uid:
+          type: string
+        token:
+          type: string
+      required:
+      - token
+      - uid
+    BankCard:
+      type: object
+      description: Сериализатор банковской карты
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        card_number:
+          type: string
+          title: Номер карты
+          maxLength: 19
+        is_active:
+          type: boolean
+          default: false
+          title: Активная карта
+        balance:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          default: 5000
+          title: Баланс
+      required:
+      - card_number
+      - id
+    Cashback:
+      type: object
+      description: Сериализатор для отображения кэшбэка пользователя
+      properties:
+        service_name:
+          type: string
+        category_name:
+          type: string
+        cashback_amount:
+          type: string
+          readOnly: true
+      required:
+      - cashback_amount
+      - category_name
+      - service_name
+    Category:
+      type: object
+      description: Сериализатор категорий
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          title: Название категории
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        services:
+          type: string
+          readOnly: true
+      required:
+      - id
+      - name
+      - services
+    Comparison:
+      type: object
+      description: Сериализатор для отображения сравнений
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          title: Название сервиса
+          readOnly: true
+        image:
+          type: string
+          format: uri
+        min_price:
+          type: string
+          readOnly: true
+        max_cashback:
+          type: string
+          readOnly: true
+      required:
+      - id
+      - image
+      - max_cashback
+      - min_price
+      - name
+    CreateSubscription:
+      type: object
+      description: Сериализатор для создания подписки
+      properties:
+        start_date:
+          type: string
+          format: date-time
+          title: Дата начала подписки
+        end_date:
+          type: string
+          format: date-time
+          nullable: true
+          title: Дата окончания подписки
+        bank_card_details:
+          allOf:
+          - $ref: '#/components/schemas/BankCard'
+          readOnly: true
+        terms_details:
+          allOf:
+          - $ref: '#/components/schemas/TermDetail'
+          readOnly: true
+      required:
+      - bank_card_details
+      - terms_details
+    DurationEnum:
+      enum:
+      - one_month
+      - three_months
+      - six_months
+      - one_year
+      type: string
+      description: |-
+        * `one_month` - Один месяц
+        * `three_months` - Три месяца
+        * `six_months` - Шесть месяцев
+        * `one_year` - Один год
+    Expense:
+      type: object
+      description: Сериализатор для отображения расходов
+      properties:
+        service_name:
+          type: string
+        category_name:
+          type: string
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        start_date:
+          type: string
+          format: date-time
+          title: Дата начала подписки
+      required:
+      - category_name
+      - price
+      - service_name
+    MainPage:
+      type: object
+      description: Сериализатор главной страницы
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        best_offer:
+          type: array
+          items:
+            $ref: '#/components/schemas/Service'
+        subscription:
+          type: array
+          items:
+            $ref: '#/components/schemas/MainSubscription'
+          readOnly: true
+        total_cashback:
+          type: string
+          readOnly: true
+        total_expenses:
+          type: string
+          readOnly: true
+        total_paids:
+          type: string
+          readOnly: true
+      required:
+      - best_offer
+      - id
+      - subscription
+      - total_cashback
+      - total_expenses
+      - total_paids
+    MainSubscription:
+      type: object
+      description: |-
+        Дополнительный сериализатор главной страницы для обработки подписок
+        пользователя
+      properties:
+        service_name:
+          type: string
+        service_image:
+          type: string
+          format: uri
+        terms_price:
+          type: integer
+      required:
+      - service_image
+      - service_name
+      - terms_price
+    PaginatedCashbackList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Cashback'
+    PaginatedCategoryList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Category'
+    PaginatedExpenseList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Expense'
+    PaginatedPaidList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Paid'
+    PaginatedServiceList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Service'
+    PaginatedUserList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+    PaginatedUserSubscribeList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserSubscribe'
+    Paid:
+      type: object
+      description: Сериализатор для получения оплаты
+      properties:
+        service_name:
+          type: string
+        category_name:
+          type: string
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        end_date:
+          type: string
+          format: date-time
+          nullable: true
+          title: Дата окончания подписки
+      required:
+      - category_name
+      - price
+      - service_name
+    PasswordResetConfirm:
+      type: object
+      properties:
+        uid:
+          type: string
+        token:
+          type: string
+        new_password:
+          type: string
+      required:
+      - new_password
+      - token
+      - uid
+    PatchedBankCard:
+      type: object
+      description: Сериализатор банковской карты
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        card_number:
+          type: string
+          title: Номер карты
+          maxLength: 19
+        is_active:
+          type: boolean
+          default: false
+          title: Активная карта
+        balance:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          default: 5000
+          title: Баланс
+    PatchedCreateSubscription:
+      type: object
+      description: Сериализатор для создания подписки
+      properties:
+        start_date:
+          type: string
+          format: date-time
+          title: Дата начала подписки
+        end_date:
+          type: string
+          format: date-time
+          nullable: true
+          title: Дата окончания подписки
+        bank_card_details:
+          allOf:
+          - $ref: '#/components/schemas/BankCard'
+          readOnly: true
+        terms_details:
+          allOf:
+          - $ref: '#/components/schemas/TermDetail'
+          readOnly: true
+    PatchedUser:
+      type: object
+      description: При просмотре страницы пользователя
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        first_name:
+          type: string
+          title: Имя
+          maxLength: 255
+        last_name:
+          type: string
+          title: Фамилия
+          maxLength: 255
+        phone_number:
+          type: string
+          title: Телефонный номер
+          pattern: ^\+?1?\d{9,15}$
+          maxLength: 17
+    SendEmailReset:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+      required:
+      - email
+    Service:
+      type: object
+      description: Сериализатор сервисов
+      properties:
+        name:
+          type: string
+          title: Название сервиса
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        image:
+          type: string
+          format: uri
+          title: Логотип сервиса
+        text:
+          type: string
+          title: Описание сервиса
+        category:
+          allOf:
+          - $ref: '#/components/schemas/Category'
+          readOnly: true
+        min_price:
+          type: string
+          readOnly: true
+        max_cashback:
+          type: string
+          readOnly: true
+        is_featured:
+          type: boolean
+          default: false
+          title: Лучшее предложение
+      required:
+      - category
+      - image
+      - max_cashback
+      - min_price
+      - name
+      - text
+    ServiceWithTerms:
+      type: object
+      description: Сериализатор сервиса с условиями
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          title: Название сервиса
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        image:
+          type: string
+          format: uri
+          title: Логотип сервиса
+        text:
+          type: string
+          title: Описание сервиса
+        subscription_terms:
+          type: array
+          items:
+            $ref: '#/components/schemas/Terms'
+          readOnly: true
+      required:
+      - id
+      - image
+      - name
+      - subscription_terms
+      - text
+    SetPassword:
+      type: object
+      properties:
+        new_password:
+          type: string
+        current_password:
+          type: string
+      required:
+      - current_password
+      - new_password
+    SetUsername:
+      type: object
+      properties:
+        current_password:
+          type: string
+        new_email:
+          type: string
+          format: email
+          title: Email
+          maxLength: 254
+      required:
+      - current_password
+      - new_email
+    SubscriptionTypeEnum:
+      enum:
+      - free
+      - paid
+      - trial
+      type: string
+      description: |-
+        * `free` - Бесплатная подписка
+        * `paid` - Платная подписка
+        * `trial` - Пробная подписка
+    TermDetail:
+      type: object
+      description: Сериализатор деталей условия подписки
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 150
+        subscription_type:
+          allOf:
+          - $ref: '#/components/schemas/SubscriptionTypeEnum'
+          default: free
+          title: Тип подписки
+        duration:
+          allOf:
+          - $ref: '#/components/schemas/DurationEnum'
+          title: Продолжительность
+        cashback:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          title: Кэшбэк
+        price:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          title: Цена
+        service_name:
+          type: string
+          readOnly: true
+        service_image:
+          type: string
+          format: uri
+          readOnly: true
+        service_category:
+          type: string
+          readOnly: true
+      required:
+      - cashback
+      - duration
+      - id
+      - name
+      - price
+      - service_category
+      - service_image
+      - service_name
+    Terms:
+      type: object
+      description: Сериализатор условий подписок
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 150
+        price:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          title: Цена
+        duration:
+          allOf:
+          - $ref: '#/components/schemas/DurationEnum'
+          title: Продолжительность
+        cashback:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          title: Кэшбэк
+      required:
+      - cashback
+      - duration
+      - id
+      - name
+      - price
+    TokenObtainPair:
+      type: object
+      properties:
+        email:
+          type: string
+          writeOnly: true
+        password:
+          type: string
+          writeOnly: true
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+          readOnly: true
+      required:
+      - access
+      - email
+      - password
+      - refresh
+    TokenRefresh:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+          writeOnly: true
+      required:
+      - access
+      - refresh
+    TokenVerify:
+      type: object
+      properties:
+        token:
+          type: string
+          writeOnly: true
+      required:
+      - token
+    User:
+      type: object
+      description: При просмотре страницы пользователя
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        first_name:
+          type: string
+          title: Имя
+          maxLength: 255
+        last_name:
+          type: string
+          title: Фамилия
+          maxLength: 255
+        phone_number:
+          type: string
+          title: Телефонный номер
+          pattern: ^\+?1?\d{9,15}$
+          maxLength: 17
+      required:
+      - email
+      - first_name
+      - id
+      - last_name
+      - phone_number
+    UserCreate:
+      type: object
+      properties:
+        username:
+          type: string
+          title: Имя пользователя
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        phone_number:
+          type: string
+          title: Телефонный номер
+          pattern: ^\+?1?\d{9,15}$
+          maxLength: 17
+        first_name:
+          type: string
+          title: Имя
+          maxLength: 255
+        last_name:
+          type: string
+          title: Фамилия
+          maxLength: 255
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        id:
+          type: integer
+          readOnly: true
+        password:
+          type: string
+          writeOnly: true
+      required:
+      - email
+      - first_name
+      - id
+      - last_name
+      - password
+      - phone_number
+      - username
+    UserSubscribe:
+      type: object
+      description: Сериализатор личной страницы пользователя
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        service:
+          type: string
+          title: Название сервиса
+          readOnly: true
+        category:
+          type: string
+          title: Название категории
+          readOnly: true
+        image:
+          type: string
+          format: uri
+        price:
+          type: integer
+        cashback:
+          type: integer
+        end_date:
+          type: string
+          format: date-time
+          nullable: true
+          title: Дата окончания подписки
+        bank_card:
+          type: integer
+      required:
+      - bank_card
+      - cashback
+      - category
+      - id
+      - image
+      - price
+      - service
+    UsernameResetConfirm:
+      type: object
+      properties:
+        new_email:
+          type: string
+          format: email
+          title: Email
+          maxLength: 254
+      required:
+      - new_email
+  securitySchemes:
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
