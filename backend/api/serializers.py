@@ -10,6 +10,7 @@ from services.models import (
     Subscription,
     Terms
 )
+from PAY2U.settings import SUBSCRIBE_LIMIT
 from users.models import User
 
 
@@ -24,7 +25,7 @@ class UserSerializer(UserSerializer):
 
 
 class CustomUserCreateSerializer(UserSerializer):
-    """При создании пользователя"""
+    """Сериализатор при создании пользователя"""
 
     class Meta:
         model = User
@@ -38,13 +39,14 @@ class CustomUserCreateSerializer(UserSerializer):
 
 
 class CategorySerializer(serializers.ModelSerializer):
-
+    """Сериализатор категорий"""
     class Meta:
         model = Category
         fields = ['id', 'name']
 
 
 class ServiceSerializer(serializers.ModelSerializer):
+    """Сериализатор сервисов"""
     min_price = serializers.SerializerMethodField()
     max_cashback = serializers.SerializerMethodField()
     category = CategorySerializer(read_only=True)
@@ -66,13 +68,14 @@ class ServiceSerializer(serializers.ModelSerializer):
 
 
 class TermsSerializer(serializers.ModelSerializer):
-
+    """Сериализатор условий подписок"""
     class Meta:
         model = Terms
         fields = ['id', 'name', 'price', 'duration', 'cashback']
 
 
 class ServiceWithTermsSerializer(serializers.ModelSerializer):
+    """Сериализатор сервиса с условиями """
     subscription_terms = TermsSerializer(many=True, read_only=True)
 
     class Meta:
@@ -81,6 +84,7 @@ class ServiceWithTermsSerializer(serializers.ModelSerializer):
 
 
 class TermDetailSerializer(serializers.ModelSerializer):
+    """Сериализатор деталей условия подписки"""
     service_name = serializers.CharField(source='service.name', read_only=True)
     service_image = serializers.ImageField(
         source='service.image',
@@ -100,12 +104,14 @@ class TermDetailSerializer(serializers.ModelSerializer):
 
 
 class BankCardSerializer(serializers.ModelSerializer):
+    """Сериализатор банковской карты"""
     class Meta:
         model = BankCard
         fields = ['id', 'card_number', 'is_active', 'balance']
 
 
 class CreateSubscriptionSerializer(serializers.ModelSerializer):
+    """Сериализатор для создания подписки"""
     bank_card_details = BankCardSerializer(source='bank_card', read_only=True)
     terms_details = TermDetailSerializer(source='terms', read_only=True)
 
@@ -118,6 +124,7 @@ class CreateSubscriptionSerializer(serializers.ModelSerializer):
 
 
 class ExpenseSerializer(serializers.ModelSerializer):
+    """Сериализатор для отображения расходов"""
     service_name = serializers.CharField(source='service.name')
     category_name = serializers.CharField(source='service.category.name')
     price = serializers.DecimalField(
@@ -132,6 +139,7 @@ class ExpenseSerializer(serializers.ModelSerializer):
 
 
 class PaidSerializer(serializers.ModelSerializer):
+    """Сериализатор для получения оплаты"""
     service_name = serializers.CharField(source='service.name')
     category_name = serializers.CharField(source='service.category.name')
     price = serializers.DecimalField(
@@ -146,6 +154,7 @@ class PaidSerializer(serializers.ModelSerializer):
 
 
 class CashbackSerializer(serializers.ModelSerializer):
+    """Сериализатор для отображения кэшбэка пользователя"""
     cashback_amount = serializers.SerializerMethodField()
     service_name = serializers.CharField(source='service.name')
     category_name = serializers.CharField(source='service.category.name')
@@ -155,11 +164,12 @@ class CashbackSerializer(serializers.ModelSerializer):
         fields = ['service_name', 'category_name', 'cashback_amount']
 
     def get_cashback_amount(self, obj):
+        """Получений суммы кэшбэка для конретного сервиса"""
         return obj.terms.price * (obj.terms.cashback / 100)
 
 
 class UserSubscribeSerializer(serializers.ModelSerializer):
-
+    """Сериализатор личной страницы пользователя"""
     service = serializers.ReadOnlyField(source='service.name')
     category = serializers.ReadOnlyField(source='service.category.name')
     image = serializers.ImageField(source='service.image')
@@ -176,6 +186,7 @@ class UserSubscribeSerializer(serializers.ModelSerializer):
 
 
 class TermsPriceCashbackSerializer(serializers.ModelSerializer):
+    """Сериализатор для отображения цены и кэшбэка для сервиса"""
 
     class Meta:
         model = Terms
@@ -190,12 +201,14 @@ class BestOfferSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'image', 'cashback']
 
     def get_cashback(self, obj):
+        """Получить сумму кэшбэка"""
         terms = Terms.objects.filter(service=obj.id, is_featured=True)
         serializer = TermsPriceCashbackSerializer(terms, many=True)
         return serializer.data
 
 
 class SubscriptionSerializer(serializers.ModelSerializer):
+    """Сериализатор подписок пользователя"""
     bank_card_details = BankCardSerializer(source='bank_card', read_only=True)
     terms_details = TermDetailSerializer(source='terms', read_only=True)
 
@@ -207,6 +220,8 @@ class SubscriptionSerializer(serializers.ModelSerializer):
 
 
 class MainSubscriptionSerializer(serializers.ModelSerializer):
+    """Дополнительный сериализатор главной страницы для обработки подписок
+    пользователя"""
     service_name = serializers.CharField(source='service.name')
     service_image = serializers.ImageField(source='service.image')
     terms_price = serializers.IntegerField(source='terms.price')
@@ -217,6 +232,7 @@ class MainSubscriptionSerializer(serializers.ModelSerializer):
 
 
 class MainPageSerializer(serializers.ModelSerializer):
+    """Сериализатор главной страницы"""
     best_offer = serializers.SerializerMethodField()
     subscription = MainSubscriptionSerializer(
         many=True,
@@ -235,6 +251,7 @@ class MainPageSerializer(serializers.ModelSerializer):
         ]
 
     def get_best_offer(self, obj):
+        """Лучшее предложение"""
         featured_services = Service.objects.filter(is_featured=True)
         serializer = ServiceSerializer(
             featured_services,
@@ -244,18 +261,21 @@ class MainPageSerializer(serializers.ModelSerializer):
         return serializer.data
 
     def get_total_cashback(self, obj):
+        """Общий кэшбэк"""
         queryset = obj.subscriptions.all()
         return sum(
             sub.terms.price * (sub.terms.cashback / 100) for sub in queryset
         )
 
     def get_total_expenses(self, obj):
+        """Общая сумма рассходов"""
         queryset = obj.subscriptions.all()
         return (
             queryset.aggregate(Sum('terms__price'))['terms__price__sum'] or 0
         )
 
     def get_total_paids(self, obj):
+        """Общая сумма к оплате"""
         queryset = obj.subscriptions.all()
         return (
             queryset.aggregate(Sum('terms__price'))['terms__price__sum'] or 0
@@ -286,12 +306,13 @@ class ComparisonSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'image', 'min_price', 'max_cashback')
 
     def get_min_price(self, obj):
-
+        """Минимальная цена подписки"""
         service = Service.objects.get(id=obj.service.id)
         min_price = service.min_price
         return min_price if min_price is not None else 0
 
     def get_max_cashback(self, obj):
+        """Максимальный кэшбек сервиса"""
         service = Service.objects.get(id=obj.service.id)
         max_cashback = service.max_cashback
         return max_cashback if max_cashback is not None else 0
@@ -308,9 +329,9 @@ class AdditionalForServiceSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'image', 'service_terms')
 
     def get_service_terms(self, obj):
-        """Получение списка рецептов автора"""
+        """Получение списка условий сервиса"""
 
-        categorys_services = Terms.objects.filter(id=obj.id)
+        categorys_services = Terms.objects.filter(service=obj.id)
 
         serializer = ServiceTermsForCatalogSerializer(
                 categorys_services,
@@ -318,3 +339,31 @@ class AdditionalForServiceSerializer(serializers.ModelSerializer):
                 many=True,
             )
         return serializer.data
+
+class CatalogSerializer(serializers.ModelSerializer):
+    """Подписка"""
+    services = serializers.SerializerMethodField()
+
+
+    class Meta:
+        model = Category
+        fields = (
+            'id',
+            'name',
+            'services',
+        )
+
+    def get_services(self, obj):
+        """Получение списка рецептов автора"""
+
+        categorys_services = obj.services.all()[:SUBSCRIBE_LIMIT]
+
+        if categorys_services:
+            serializer = AdditionalForServiceSerializer(
+                categorys_services,
+                context={'request': self.context['request']},
+                many=True,
+            )
+            return serializer.data
+
+        return []

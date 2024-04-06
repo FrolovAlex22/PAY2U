@@ -17,8 +17,10 @@ from rest_framework.views import APIView
 
 from .filters import ServiceFilter
 from .serializers import (
+    AdditionalForServiceSerializer,
     BankCardSerializer,
     CashbackSerializer,
+    CatalogSerializer,
     CategorySerializer,
     ComparisonSerializer,
     CreateSubscriptionSerializer,
@@ -87,7 +89,7 @@ class CustomUserViewSet(UserViewSet):
 
     @action(
         detail=False,
-        methods=('get',),
+        methods=['get',],
         permission_classes=(IsAuthenticated,),
     )
     def cashback(self, request):
@@ -249,6 +251,28 @@ class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = CategorySerializer
     pagination_class = PageNumberPagination
 
+    @action(
+        detail=False,
+        methods=('get',),
+        permission_classes=(IsAuthenticated,),
+    )
+    def catalog(self, request):
+        """Каталог пользователя разбитый на категории"""
+        queryset = Category.objects.all()
+        pages = self.paginate_queryset(queryset)
+        serializer = CatalogSerializer(
+            pages, many=True, context={'request': request}
+        )
+        best_offer = Service.objects.filter(is_featured=True)
+        serializer_best_offer = AdditionalForServiceSerializer(
+                best_offer,
+                context={'request': self.request},
+                many=True,
+            )
+        data = serializer.data
+        data.append({'best_offer': serializer_best_offer.data})
+        return self.get_paginated_response(data)
+
 
 class ServiceViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Service.objects.all()
@@ -269,8 +293,27 @@ class ServiceViewSet(viewsets.ReadOnlyModelViewSet):
         return super().get_serializer_class()
 
     @action(
+            detail=False,
+            methods=['get',],
+            url_path='bestoffer'
+        )
+    def best_offer(self, request):
+        queryset = Service.objects.filter(is_featured=True)
+        if not queryset:
+            return Response(
+                {
+                    'errors': 'Лучшие предложения не выбраны администратором.'
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        serializer = ServiceSerializer(
+            queryset, many=True, context={'request': request}
+        )
+        return Response(serializer.data)
+
+    @action(
             detail=True,
-            methods=('get',),
+            methods=['get',],
             url_path='terms/(?P<term_pk>[^/.]+)'
         )
     def term_detail(self, request, pk=None, term_pk=None):
