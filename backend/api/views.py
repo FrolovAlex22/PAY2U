@@ -445,3 +445,4 @@ class BankCardView(APIView):
             {'message': 'Карта активирована'},
             status=status.HTTP_200_OK
         )
+
