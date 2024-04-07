@@ -9,16 +9,12 @@ from .views import (
     ComparisonAPIView,
     MainPageAPIView,
     ServiceViewSet,
-    SubscriptionViewSet,
 )
 
 
 router = routers.DefaultRouter()
 router.register(r'services', ServiceViewSet, basename='services')
 router.register(r'categories', CategoryViewSet, basename='categories')
-router.register(
-    r'subscriptions', SubscriptionViewSet, basename='subscriptions'
-)
 router.register(r'user', CustomUserViewSet, basename='users')
 
 app_name = 'api'

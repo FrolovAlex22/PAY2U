@@ -4,7 +4,7 @@ from django.db.models import Q, Sum
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
-from rest_framework import viewsets, status, mixins
+from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.pagination import PageNumberPagination
@@ -23,7 +23,6 @@ from .serializers import (
     CatalogSerializer,
     CategorySerializer,
     ComparisonSerializer,
-    CreateSubscriptionSerializer,
     ExpenseSerializer,
     MainPageSerializer,
     PaidSerializer,
@@ -389,20 +388,6 @@ class ServiceViewSet(viewsets.ReadOnlyModelViewSet):
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
-class SubscriptionViewSet(
-    mixins.CreateModelMixin,
-    mixins.UpdateModelMixin,
-    mixins.DestroyModelMixin,
-    viewsets.GenericViewSet
-):
-
-    queryset = Subscription.objects.all()
-    serializer_class = CreateSubscriptionSerializer
-
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
-
-
 class BankCardView(APIView):
 
     def get(self, request):
@@ -445,4 +430,3 @@ class BankCardView(APIView):
             {'message': 'Карта активирована'},
             status=status.HTTP_200_OK
         )
-

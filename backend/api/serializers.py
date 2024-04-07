@@ -42,7 +42,6 @@ class CategorySerializer(serializers.ModelSerializer):
     """Сериализатор категорий"""
     services = serializers.SerializerMethodField()
 
-
     class Meta:
         model = Category
         fields = ['id', 'name', 'services']
@@ -126,19 +125,6 @@ class BankCardSerializer(serializers.ModelSerializer):
     class Meta:
         model = BankCard
         fields = ['id', 'card_number', 'is_active', 'balance']
-
-
-class CreateSubscriptionSerializer(serializers.ModelSerializer):
-    """Сериализатор для создания подписки"""
-    bank_card_details = BankCardSerializer(source='bank_card', read_only=True)
-    terms_details = TermDetailSerializer(source='terms', read_only=True)
-
-    class Meta:
-        model = Subscription
-        fields = [
-            'start_date', 'end_date', 'bank_card_details', 'terms_details'
-        ]
-        extra_kwargs = {'end_date': {'required': False}}
 
 
 class ExpenseSerializer(serializers.ModelSerializer):
@@ -358,10 +344,10 @@ class AdditionalForServiceSerializer(serializers.ModelSerializer):
             )
         return serializer.data
 
+
 class CatalogSerializer(serializers.ModelSerializer):
     """Подписка"""
     services = serializers.SerializerMethodField()
-
 
     class Meta:
         model = Category
