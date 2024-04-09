@@ -16,182 +16,216 @@ PAY2U — менеджер платных подписок.
 ### Как запустить проект:
 
 ## Локальный запуск проекта:
-```
+
 Клонируйте репозиторий с проектом на свой компьютер. В терминале из рабочей директории выполните команду:
 
-git clone https://git@github.com:FrolovAlex22/PAY2U.git
-
 ```
+git clone https://git@github.com:FrolovAlex22/PAY2U.git
+```
+
 Cоздать и активировать виртуальное окружение:
 
 Команда для установки виртуального окружения на Mac или Linux:
 
+```
 python3 -m venv env
 source env/bin/activate
+```
 
 Команда для Windows:
 
+```
 python -m venv venv
 source venv/Scripts/activate
-
 ```
+
 Перейти в директорию devops:
 
+```
 cd devops
-
+```
 Создать файл .env по образцу:
 
-.env.example
-
 ```
+.env.example
+```
+
 Установить зависимости из файла requirements.txt
 
+```
 cd ..
 cd backend
 pip install -r requirements.txt
-
 ```
+
 Выполните миграции:
 
-python manage.py migrate
-
 ```
+python manage.py migrate
+```
+
 Создание нового супер пользователя:
 
-python manage.py createsuperuser
-
 ```
+python manage.py createsuperuser
+```
+
 Заполните базу тестовыми данными:
 
-python manage.py categorys
-
 ```
+python manage.py categorys
+```
+
 Запустить локальный сервер:
 
+```
 python manage.py runserver
+```
 
 ## Установка на удалённом сервере:
-```
+
 Выполнить вход на удаленный сервер
 
 Установить docker:
 
-sudo apt install docker.io
-
 ```
+sudo apt install docker.io
+```
+
 Установить docker-compose:
 
-sudo apt install docker-compose    
-
 ```
+sudo apt install docker-compose    
+```
+
 Находясь локально в директории devops/, скопировать файлы docker-compose.yml и nginx.conf на удаленный сервер:
 
+```
 scp docker-compose.yml <username>@<host>:/home/<username>/
 scp nginx.conf <username>@<host>:/home/<username>/
-
 ```
+
 Выполните команду:
 
-docker compose up 
-
 ```
+docker compose up 
+```
+
 Создайте и выполните миграции:
 
+```
 docker-compose exec backend python manage.py makemigrations
 docker-compose exec backend python manage.py migrate
-
 ```
+
 Создайте суперпользователя:
 
-docker-compose exec backend python manage.py createsuperuser
-
 ```
+docker-compose exec backend python manage.py createsuperuser
+```
+
 Загрузите статику:
 
-docker-compose exec backend python manage.py collectstatic
-
 ```
+docker-compose exec backend python manage.py collectstatic
+```
+
 Заполните базу тестовыми данными:
 
+```
 docker-compose exec backend python manage.py categorys
+```
 
 ### Основные адреса:
 
-```
 Регистрация пользователя:
 
-/api/user/
-
 ```
+/api/user/
+```
+
 Получение данных своей учетной записи:
 
-/api/user/profile/ 
-
 ```
+/api/user/profile/ 
+```
+
 Получение данных о кэшбэке в этом месяце:
 
-/api/user/cashback/ 
-
 ```
+/api/user/cashback/ 
+```
+
 Получение данных о предстоящих расходах в этом месяце:
 
-/api/user/expenses/ 
-
 ```
+/api/user/expenses/ 
+```
+
 Получение данных о оплаченых сервисах в этом месяце:
 
-/api/user/paids/ 
-
 ```
+/api/user/paids/ 
+```
+
 Получение списка сервисов на который подписан ползователь:
 
-/api/user/subscriptions/ 
-
 ```
+/api/user/subscriptions/ 
+```
+
 Главная страница приложения:
 
-/api/main/ 
-
 ```
+/api/main/ 
+```
+
 Каталог сервисов:
 
-/api/categories/catalog/
-
 ```
+/api/categories/catalog/
+```
+
 Список сервисов в определенной категории:
 
-/api/categories/<id>/
-
 ```
+/api/categories/<id>/
+```
+
 Страница с лучшими предложениями:
 
-/api/services/bestoffer/
-
 ```
+/api/services/bestoffer/
+```
+
 Страница сервиса с описание:
 
-/api/services/<id>/
-
 ```
+/api/services/<id>/
+```
+
 Подписка на сервис:
 
-/api/services/<id>/terms/<term_pk>/
-
 ```
+/api/services/<id>/terms/<term_pk>/
+```
+
 Добавление подписки:
 
-/api/services/<id>/terms/<term_pk>/subscribe/
-
 ```
+/api/services/<id>/terms/<term_pk>/subscribe/
+```
+
 Список сервисов в сравнении:
 
-/api/comparison/
-
 ```
+/api/comparison/
+```
+
 Добавить сервис в сравнении:
 
+```
 /api/services/add_comparison/
-
 ```
 
 ### Авторы:
